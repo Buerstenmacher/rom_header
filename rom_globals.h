@@ -60,15 +60,15 @@ constexpr auto _GAUSS_P_TESLA(10.0 * _kilo);		//unit conversion for magnetic flu
 constexpr auto _TESLA_P_GAUSS(_one/_GAUSS_P_TESLA);	//unit conversion for magnetic flux density
 constexpr auto _EARTH_RADIUS(6371000.785);             //meter  (average Value)
 
-constexpr auto _ROM_PI_FUNC(void)->decltype(_neg_one){	//copute pi at compiletime (3.1415..............)
+constexpr auto _PI_FUNC(void)->decltype(_neg_one){	//copute pi at compiletime (3.1415..............)
 //acos(_neg_one);					//acos of -1.0 should be pi or -pi
 return (acos(_neg_one)>_zero)?(acos(_neg_one)):(_neg_one*acos(_neg_one));	//return the positive value
 }
 
-constexpr auto _ROM_PI{_ROM_PI_FUNC()};	
+constexpr auto _PI{_PI_FUNC()};
 
-constexpr auto _GRAD_P_RAD (180.0/_ROM_PI);	//conversion factor of angle units
-constexpr auto _RAD_P_GRAD (_ROM_PI/180.0);	//conversion factor of angle units
+constexpr auto _GRAD_P_RAD (180.0/_PI);	//conversion factor of angle units
+constexpr auto _RAD_P_GRAD (_PI/180.0);	//conversion factor of angle units
 
 constexpr auto _M_P_FEET(double(0.3048));	//speed unit conversion factor
 constexpr auto _KNOT_P_MPS(double(1.943844));  	//speed unit conversion factor

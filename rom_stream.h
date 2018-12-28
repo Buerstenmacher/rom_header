@@ -35,7 +35,6 @@ return os;
 	std::cout << empty_list <<std::endl;
 	}
 
-
 output should look like:
 	std::vector{ (0) (1.7) (7.4) (0.004) }
 	std::list{ (0) (1.7) (7.4) (0.004) }

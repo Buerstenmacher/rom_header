@@ -1,4 +1,4 @@
-//this header file shold help you deal with large (and small) positive integer numbers. i recomend "uint64_t"
+//this header file should help you deal with large (and small) positive integer numbers. i recomend "uint64_t"
 #include <set>
 #include <vector>
 

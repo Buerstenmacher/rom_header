@@ -17,6 +17,7 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <vector>
 #include <math.h>
 #include <sstream>
 #include <iostream>  //remove after debugging
@@ -24,6 +25,8 @@
 #include "rom_error.h"
 
 namespace rom {
+
+std::vector<std::string> _monthnames{"xxx","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dez"};
 
 typedef std::chrono::high_resolution_clock prfclk;	//prefered c++11-clock
 

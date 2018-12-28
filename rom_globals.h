@@ -34,8 +34,8 @@ constexpr auto _s_p_us =	ratio_value<std::micro>();	//seconds per micro second
 constexpr auto _s_p_ns =	ratio_value<std::nano>();	//seconds per nano second
 constexpr auto _s_p_ms =	ratio_value<std::milli>();	//seconds per milli second
 
-constexpr auto _one {_milli / _milli};	//divide a number by itself to get 1.0
-constexpr auto _zero{_milli - _milli};	//subtract a number from itslf to get 0.0
+constexpr auto _one {_milli / _milli};//divide a number by itself to get 1.0; 	floating point 1.0
+constexpr auto _zero{_milli - _milli};//subtract a number from itslf to get 0.0;floating point 0.0
 
 #ifndef TRUE	//alternative to keyword "true"
 constexpr uint8_t TRUE (_zero < _one); 	//yes that's true ;-)
@@ -51,6 +51,17 @@ constexpr auto _false	{FALSE};	//this aswell	;-)
 constexpr std::complex<decltype(_one)> _i(_zero,_one);  //sqare root of (-1)
 constexpr std::complex<decltype(_one)> _j(_zero,_one);  //sqare root of (-1)
 
+constexpr uint8_t _HIGH{uint8_t(_one)};		//integer 1
+constexpr uint8_t _LOW {uint8_t(_zero)};	//integer 0
+
+constexpr double _EARTH_G(9.80665);	//[(m/(s*s))/G]  Surface acceleration on Earth (average Value)
+constexpr double _GAUSS_P_TESLA(10.0 * _kilo);		//unit conversion for magnetic flux density
+constexpr double _TESLA_P_GAUSS(_one/_GAUSS_P_TESLA);	//unit conversion for magnetic flux density
+
+constexpr auto _M_P_FEET(double(0.3048));		//speed unit conversion factor
+constexpr auto _KNOT_P_MPS(double(1.943844));  	//speed unit conversion factor
+constexpr auto _MPS_P_KNOT (_one/_KNOT_P_MPS);	//speed unit conversion factor
+
 constexpr auto _short_int_max 	{std::numeric_limits<short int>::max()};
 constexpr auto _int_max 	{std::numeric_limits<int>::max()};
 constexpr auto _long_int_max 	{std::numeric_limits<long int>::max()};
@@ -65,6 +76,8 @@ constexpr auto _uint8_t_max 	{std::numeric_limits<uint8_t>::max()};
 constexpr auto _uint16_t_max 	{std::numeric_limits<uint16_t>::max()};
 constexpr auto _uint32_t_max 	{std::numeric_limits<uint32_t>::max()};
 constexpr auto _uint64_t_max 	{std::numeric_limits<uint64_t>::max()};
+
+constexpr auto _streamsize_max	{std::numeric_limits <std::streamsize>::max()};
 
 
 

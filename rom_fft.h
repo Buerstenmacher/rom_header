@@ -11,16 +11,16 @@ namespace rom {
 template <class it_i, class it_o> //additional safety for std::copy()
 void copy_range_checked(it_i inp_begin,it_i inp_end,it_o out_begin,it_o out_end) {
 if (std::distance(inp_begin,inp_end) != std::distance(out_begin,out_end))	{
-	rom::error("copy_range_checked() has got two Iterator-ranges with different size");
+	rom::error("copy_range_checked() has got two iterator-ranges with different size \n");
 	}
 std::copy(inp_begin,inp_end,out_begin);		//out_end should be fine
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 //dft() performs the discrete fourier transformation as it's described in your math books
 //it is simple but will be slow for larger ranges O(n*n)
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <class RamIt>	//RamIt should be an Iterator to type std::complex<floating point type>
 void dft(RamIt first, RamIt last){	//input range from first to last; dft((ve.begin(),ve.end());
 typedef typename RamIt::value_type valtype;	//this should be std::complex<float>
@@ -35,6 +35,21 @@ for (decltype(n) k = 0; k < n; k++) {		//Perform the discrete fourier transf.
 rom::copy_range_checked(result.begin(),result.end(),first,last);//copy result back to the input range
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+//idft() performs the inversion of discrete fourier transformation as it's described in your math books
+template <class RamIt>	//
+void idft(RamIt first, RamIt last)	{	//input iterator-range
+typedef typename RamIt::value_type valtype;	//this should be std::complex<float>
+std::vector<valtype> aut(first,last);	//compare a container for temporary values; deeeep copy
+for (auto & r:aut) {r = std::conj(r);}	//conjugate all numbers
+dft(aut.begin(),aut.end());		//perform dft() as usual
+for (auto & r:aut) {r = std::conj(r)/double(aut.size());}//conjugate an scale again
+rom::copy_range_checked(aut.begin(),aut.end(),first,last);//copy result back to the input range
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 

@@ -1,4 +1,4 @@
-//This is a C++ FFT library;	Description is comming soon.
+//This is a C++11 FFT library;	Description is comming soon.
 #include <complex>
 #include <type_traits>
 #include "rom_globals.h"
@@ -35,6 +35,7 @@ for (decltype(n) k = 0; k < n; k++) {		//Perform the discrete fourier transf.
 rom::copy_range_checked(result.begin(),result.end(),first,last);//copy result back to the input range
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 

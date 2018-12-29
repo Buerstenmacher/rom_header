@@ -49,8 +49,15 @@ constexpr uint8_t FALSE {!TRUE};
 constexpr auto _true 	{TRUE};		//this is useles :-)
 constexpr auto _false	{FALSE};	//this aswell	;-)
 
-constexpr std::complex<decltype(_one)> _i(_zero,_one);  //sqare root of (-1)
-constexpr std::complex<decltype(_one)> _j(_zero,_one);  //sqare root of (-1)
+template<typename ret=double>		//It has to be a constexpr function
+constexpr std::complex<ret> _i(){	//otherwise there would be a problem with "const"
+return std::complex<ret>{_zero,_one};	//return sqare root of (-1)
+}
+
+template<typename ret=double>		//same a above
+constexpr std::complex<ret> _j(){
+return std::complex<ret>{_zero,_one};	//return sqare root of (-1)
+}
 
 constexpr uint8_t _HIGH{uint8_t(_one)};		//integer 1
 constexpr uint8_t _LOW {uint8_t(_zero)};	//integer 0

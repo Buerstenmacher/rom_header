@@ -59,6 +59,11 @@ constexpr std::complex<ret> _j(){
 return std::complex<ret>{_zero,_one};	//return sqare root of (-1)
 }
 
+template<typename ret=double>		//same a above
+constexpr std::complex<ret> _complex_zero(){
+return std::complex<ret>{_zero,_zero};	//return zero in complex number
+}
+
 constexpr uint8_t _HIGH{uint8_t(_one)};		//integer 1
 constexpr uint8_t _LOW {uint8_t(_zero)};	//integer 0
 

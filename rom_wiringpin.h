@@ -50,7 +50,7 @@ flow();
 return digitalRead(wp);
 }
 
-inline uint8_t flow_and_wait(double dt_sec=0.1) {//release gpio and wait for i2c pullup to pull line HIGH
+/*inline uint8_t flow_and_wait(double dt_sec=0.1) {//release gpio and wait for i2c pullup to pull line HIGH
 flow();                                         //this may take some time if a i2c slave does clock-stretching on
 double beg = rom::mashinetime() + dt_sec;        //a scl line //eine sekunde in der zukunft
 do      {
@@ -61,7 +61,7 @@ do      {
                 }
         } while (read() != rom::_HIGH);
 return 0;  //Error? == false
-}
+}*/
 };	//wiringpin
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////

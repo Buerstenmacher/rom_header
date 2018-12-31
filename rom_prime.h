@@ -1,6 +1,7 @@
 //this header file should help you deal with large (and small) positive integer numbers. i recomend "uint64_t"
 #include <set>
 #include <vector>
+#include "rom_error.h"
 
 #ifndef ROM_PRIME_H
 #define ROM_PRIME_H

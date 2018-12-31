@@ -3,7 +3,7 @@
 #include <ratio>
 #include <limits>
 #include <complex>
-
+#include <cmath>
 namespace rom {
 
 template<typename Ra,typename ret=long double>
@@ -46,11 +46,11 @@ constexpr uint8_t TRUE (_zero < _one); 	//yes that's true ;-)
 constexpr uint8_t FALSE {!TRUE};
 #endif //FALSE
 
-constexpr auto _true 	{TRUE};		//this is useles :-)
+constexpr auto _true 	{TRUE};		//this is useles :-)  //you'l better use built in keywords
 constexpr auto _false	{FALSE};	//this aswell	;-)
 
 template<typename ret=double>		//It has to be a constexpr function
-constexpr std::complex<ret> _i(){	//otherwise there would be a problem with "const"
+constexpr std::complex<ret> _i(){	//otherwise there will be a problem with "const std::complex<const float>"
 return std::complex<ret>{_zero,_one};	//return sqare root of (-1)
 }
 
@@ -73,11 +73,13 @@ constexpr auto _TESLA_P_GAUSS(_one/_GAUSS_P_TESLA);	//unit conversion for magnet
 constexpr auto _EARTH_RADIUS(6371000.785);             //meter  (average Value)
 
 constexpr auto _PI_FUNC(void)->decltype(_neg_one){	//copute pi at compiletime (3.1415..............)
-//acos(_neg_one);					//acos of -1.0 should be pi or -pi
 return (acos(_neg_one)>_zero)?(acos(_neg_one)):(_neg_one*acos(_neg_one));	//return the positive value
-}
+}//std::max() sucks  :-P	//acos(_neg_one);	acos of -1.0 should be pi or -pi
+
+constexpr auto _e_func(void)->decltype(_one){return ::exp(_one);}//compute "eulers number" at compilet. (2.718281...)
 
 constexpr auto _PI{_PI_FUNC()};
+constexpr auto _e{_e_func()};
 
 constexpr auto _GRAD_P_RAD (180.0/_PI);	//conversion factor of angle units
 constexpr auto _RAD_P_GRAD (_PI/180.0);	//conversion factor of angle units
@@ -102,6 +104,11 @@ constexpr auto _uint32_t_max 	{std::numeric_limits<uint32_t>::max()};
 constexpr auto _uint64_t_max 	{std::numeric_limits<uint64_t>::max()};
 
 constexpr auto _streamsize_max	{std::numeric_limits <std::streamsize>::max()};
+
+template<typename fltp=float>		//every floating point type
+constexpr fltp _max_acceptable_error(){
+return (std::numeric_limits<fltp>::epsilon()*16*1024); 	//i would accept a large multiple of epsilon()
+}//after a long chain of calculations, you should be able to calculate back without exceeding this error
 
 
 }	//namespace rom

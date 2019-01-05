@@ -1,8 +1,12 @@
 //This is a C++11 FFT library;	Description is comming soon.
+#include <algorithm>
 #include <complex>
 #include <type_traits>
+#include "rom_error.h"
 #include "rom_globals.h"
 #include "rom_prime.h"
+#include "rom_rand.h"
+#include "rom_time.h"
 
 #ifndef rom_fft_h
 #define rom_fft_h
@@ -36,11 +40,11 @@ dft(void) {}	//nothing to do  ;-)
 //it is simple but will be slow for larger ranges; complexity: O(n*n)
 void operator()(RamIt first, RamIt last){	//input range from first to last; dft((ve.begin(),ve.end());
 auto n =std::distance(first,last);	//compute the size of the range
-std::vector<valty> result(n,rom::_complex_zero());//compare a container for temporary values
+std::vector<valty> result(n,rom::_complex_zero());//prepare a container for temporary values
 for (decltype(n) k = 0; k < n; k++) {		//Perform the discrete fourier transf.
         for (decltype(n) j = 0; j < n; j++) {
                 double angle = 2.0 * rom::_PI * k * j / double(n);
-                result.at(k) += *(first+j) * std::exp(angle* rom::_i());
+                result.at(k) += *(first+j) * std::exp(angle * rom::_i());
                 }
         }
 rom::copy_range_checked(result.begin(),result.end(),first,last);//copy result back to the input range
@@ -102,8 +106,55 @@ for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/double(std::distance(f
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class fu=dft<std::vector<std::complex<double>>::iterator>, uint32_t size=10000, uint32_t times=10>
+class fourier_test{
+private:
+std::vector<std::complex<double>> inp,copy;
+fu fur;
+double start, stop;
 
+void generate_inp(void) {
+inp.resize(size);
+std::generate(inp.begin(),inp.end(),rom::rand_0_1);
+copy = inp;
+}
 
+void calculate (void) {
+fur(inp.begin(),inp.end());
+fur.reverse(inp.begin(),inp.end());
+}
+
+uint8_t compare(void) {
+double largest {0.0};
+for (decltype(size) i=0;i<size; i++)    {largest = std::max(std::max(std::abs(copy.at(i)),std::abs(inp.at(i))),largest);}
+for (decltype(size) i=0;i<size; i++)    {
+        auto unc = std::abs(largest*rom::_max_acceptable_error<double>());
+        auto dif = std::abs(copy.at(i)-inp.at(i));
+        if (dif > unc) {return 0;}
+        }
+return 1;
+}
+
+public:
+fourier_test(void) {}
+
+void operator()(void) {
+start = rom::mashinetime();
+for (decltype(times) i=0; i<times;i++) {
+        generate_inp();
+        calculate();
+        if (!compare()) {rom::error("There was an error at calculating a Fourier transformation!");}
+        else {std::cout << i+1 << " Fourier transformations were correct! \n";}
+        }
+stop = rom::mashinetime();
+std::cout<<times<< " fourier transformations of size " << size <<" took " <<(stop-start)<<" seconds.\n";
+}
+
+};  //class fourier_test
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 

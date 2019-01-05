@@ -107,7 +107,7 @@ constexpr auto _streamsize_max	{std::numeric_limits <std::streamsize>::max()};
 
 template<typename fltp=float>		//every floating point type
 constexpr fltp _max_acceptable_error(){
-return (std::numeric_limits<fltp>::epsilon()*16*1024); 	//i would accept a large multiple of epsilon()
+return (std::numeric_limits<fltp>::epsilon()*256*1024); 	//i would accept a large multiple of epsilon()
 }//after a long chain of calculations, you should be able to calculate back without exceeding this error
 
 

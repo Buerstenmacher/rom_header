@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <complex>
 #include <type_traits>
+#include <thread>
+#include <mutex>
 #include "rom_error.h"
 #include "rom_globals.h"
 #include "rom_prime.h"
@@ -32,11 +34,10 @@ std::copy(inp_begin,inp_end,out_begin);		//out_end should be just fine  :-)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<class RamIt>//ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
 class dft {	//template-functor-class
-private:	//can perform discrete fourier transformation and it's inverse form
+public:		//can perform discrete fourier transformation and it's inverse form
 typedef typename std::iterator_traits<RamIt>::value_type value_type;//this should be std::complex<float>
 typedef typename value_type::value_type flt;		//float, double or long double
 
-public:
 dft(void) {}	//nothing to do  ;-)
 
 //dft() performs the discrete fourier transformation as it's described in your math books
@@ -109,6 +110,60 @@ for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(firs
 
 };//class ffte
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class RamIt>	//ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
+class mt_ffte {    	//template-functor-class
+public:
+typedef typename std::iterator_traits<RamIt>::value_type value_type;//this should be std::complex<float>
+typedef typename value_type::value_type flt;            //float, double or long double
+
+mt_ffte(void) {}   //nothing to do  ;-)
+
+void operator ()(RamIt first, RamIt last,uint32_t maxthr=32) {
+if (std::distance(first,last)<=1) {return;}     //if input contains 1 sample --> do nothing
+auto size = size_t(std::distance(first,last));  //number  of samples
+auto primes = rom::prime_splitter(size);        //make a prime-factorization of the sample size,
+auto mods = primes.front();/*primes.pop_back();*///get largest primefactor at the end of std::vector
+auto modsize = (size/mods);                     //if size is a primenumber -> modsize should be 1
+//split input range in to 2d std::vector and recursively feed in to our own class; fist dimension is the number of mods
+std::vector<std::vector<value_type>>delegator(mods);//2d vector with size() == mods
+for (auto& a:delegator) {a.resize(modsize);}    //resize subvectors     //second dimension should be modsize
+auto frs = first;
+for (size_t i=0;i<size;++i) {delegator.at(i%mods).at(i/mods)=*(frs++);} //copy all inputdata into it
+if (maxthr>=mods) {	//multithread
+        std::vector<std::thread> thr;	//vector of threads
+	thr.clear();
+	for (auto& a:delegator) {
+		thr.push_back(std::thread(mt_ffte<RamIt>{},a.begin(),a.end(),(maxthr/mods)));
+		}
+	for (auto& one:thr)       {one.join();}
+	}
+	else {//single thread
+	for (auto& a:delegator) {mt_ffte{}(a.begin(),a.end(),(maxthr/mods));}    //let's perform all the smaller fft's
+	}
+auto a = first;
+for (size_t k=0; k<size;++k,++a) {   //output number
+        (*a) = rom::_complex_zero<flt>();
+        size_t pos = (k % modsize);
+        for (decltype(mods) mod=0;mod<mods;++mod) {     //mods
+                flt alpha = 2.0*rom::_PI<flt>()*mod*k/flt(size);
+                auto element = delegator.at(mod).at(pos);
+                element *= exp( rom::_i<flt>() * alpha);        //TODO check if this works as expected
+                (*a) += element;
+                }
+        }
+}
+
+void reverse(RamIt first, RamIt last) {         //inverse fourier transformation for 1 dimensional input
+for (auto it=first;it!=last;++it) {(*it) = std::conj(*it);}             //conjugate the complex numbers
+mt_ffte{}(first,last);                             //perform fft
+for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(first,last));}   //conjugate the c$
+}
+
+};//class mt_ffte
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 
 //-----Testfunction-----performance-testing

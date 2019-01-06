@@ -32,7 +32,7 @@ typedef std::chrono::high_resolution_clock prfclk;	//prefered c++11-clock
 
 inline double mashinetime() {	//returns the nummber of seconds since 1.1.1970 as precise as possible
 static prfclk cl;
-return cl.now().time_since_epoch().count()*ratio_value<prfclk::period>();
+return cl.now().time_since_epoch().count()*ratio_value<prfclk::period,double>();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,10 +121,10 @@ sleepdelay sleep;
 delay	del;
 
 public:
-autodelay(double expected_dt= _micro) {}
+autodelay(double expected_dt= _micro<double>()) {}
 
 inline void operator()(float sec) {
-if (sec < 1.0 * _micro) {sheep(sec);}
+if (sec < 1.0 * _micro<float>()) {sheep(sec);}
 else if (sec > 0.1) {sleep(sec);}
 else {del(sec);}
 }
@@ -153,7 +153,7 @@ std::string s = ctime(static_cast<time_t *>(&sek));
 std::copy_n(s.begin()+20,4,s.begin());
 s.insert (4," ");
 s.resize(20);
-s = TIMENAME+s+std::to_string(uint32_t(_mega) +  usek);	//here is a problem: to_string() supresses leading zeroes !!!!*
+s = TIMENAME+s+std::to_string(uint32_t(_mega<double>()) +  usek);	//here is a problem: to_string() supresses leading zeroes !!!!*
 *(s.end()-7 )='.';					//solution is to add 1000 000 and delete the "1" later
 return s;
 }
@@ -162,19 +162,19 @@ return s;
 
 double mashinetime(std::string ht,uint16_t genauigkeit=1023) {
 genauigkeit = (ht.size()<genauigkeit)?ht.size():genauigkeit;
-if(genauigkeit == 0)	{return  _giga;}
+if(genauigkeit == 0)	{return  _giga<double>();}
 auto mti1{mashinetime(ht,genauigkeit-1)};
 auto mti2{mti1};
 double muli{-1.01};
-auto inkr = 10.0*_nano;
+auto inkr = 10.0*_nano<double>();
 auto mis_it = ht.begin();
 do 	{
 	mti2 += inkr;
 	inkr *= muli;
 	auto hz = humantime{}(mti2);
 	mis_it = std::mismatch(ht.begin(),ht.end(),hz.begin()).first;
-	}while ((std::distance(ht.begin(),mis_it) < genauigkeit) && (fabs(inkr) < 20*_giga));
-	if (fabs(inkr) >= 20*_giga)   {return mti1;}	//std::cout <<"Error bei genauigkeit " << genauigkeit<< "\n"; 
+	}while ((std::distance(ht.begin(),mis_it) < genauigkeit) && (fabs(inkr) < 20*_giga<double>()));
+	if (fabs(inkr) >= 20*_giga<double>())   {return mti1;}	//std::cout <<"Error bei genauigkeit " << genauigkeit<< "\n"; 
 return (mti2);   //std::cout << "Die Zeitumrechnung von " << ht << " mit genauigkeit "<< genauigkeit<<" ist abgeschlossen. Der inkremetn war "<< inkr<<"\n" ;
 }
 

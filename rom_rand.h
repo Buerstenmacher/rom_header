@@ -19,16 +19,18 @@ static thread_local auto dice = std::bind(u_distr,generator);
 return dice();
 }
 
-inline double rand_0_1(){	//returns:   0.0 <= value < 1.0
+template <class flt>
+inline flt rand_0_1(){	//returns:   0.0 <= value < 1.0
 static thread_local prf_rand_eng generator{};	// 0.000000 und (1.000000-epsilon) are extreme possible return values
-static thread_local std::uniform_real_distribution<double> u_distr(rom::_zero,rom::_one); //interval[0.0,1.0)
+static thread_local std::uniform_real_distribution<double> u_distr(rom::_zero<flt>(),rom::_one<flt>()); //interval[0.0,1.0)
 static thread_local auto dice = std::bind(u_distr,generator);
 return dice();
 }
 
-inline double rand_sym(double max){	//returns:   -1.0*max <= value < 1.0*max	//almost symetric
+template <class flt>
+inline flt rand_sym(flt max){	//returns:   -1.0*max <= value < 1.0*max	//almost symetric
 static thread_local prf_rand_eng generator{};
-static thread_local std::uniform_real_distribution<double> u_distr(rom::_neg_one*max,rom::_one*max); //interval[-max,+max)
+static thread_local std::uniform_real_distribution<double> u_distr(rom::_neg_one<flt>()*max,rom::_one<flt>()*max); //interval[-max,+max)
 static thread_local auto dice = std::bind(u_distr,generator);
 return dice();
 }
@@ -51,8 +53,8 @@ std::string monte_carlo_pi(uint64_t times) {//calculate pi with your random numb
 uint64_t tries{0},hits{0};
 double x,y;
 for (tries =0; tries < times; ++tries) {
-        x=rom::rand_0_1();
-        y=rom::rand_0_1();
+        x=rom::rand_0_1<double>();
+        y=rom::rand_0_1<double>();
         if (sqrt(x*x + y*y) <= 1.0)     {++hits;}
         }
 std::ostringstream os;
@@ -71,7 +73,7 @@ return os.str();
 std::string rom_rand_test(uint64_t i){      // Testfunktion mit Konsolenausgabe
 double sum{0.0}, min{2.0}, max{0.0};
 for (uint64_t j{0}; j<i ;++j) {
-	double number = rom::rand_0_1();
+	double number = rom::rand_0_1<double>();
         sum += number;
         if (number < min)       {min = number;}
         if (number > max)       {max = number;}
@@ -85,7 +87,7 @@ return os.str();
 void rom_rand_t(void) {
 uint64_t i;
 double d;
-for (i=1; i<=(2.0*rom::_hecto*rom::_mega);i*=2) {
+for (i=1; i<=(2.0*rom::_hecto<double>()*rom::_mega<double>());i*=2) {
         std::cout<<"N: "<<i<<" \tPi: " <<monte_carlo_pi(i)<<" \tzero: "<< sign_test(i)<<rom_rand_test(double(i))<<"\n";
 	}
 }

@@ -41,11 +41,10 @@ return ret;
 
 //now we are ready to crunsh full sized 64 bit integers on mshines like RaspberryPi-Zero;  yes yes yes :-)
 template <class uintxx_t = uint64_t>	//yes i am cool because i use trailing return types ;-)
-auto isprime_low_ram_use(uintxx_t inp) ->decltype(rom::_true)	{return (prime_splitter(inp).size()==1)?rom::_true:rom::_false;}
+uint8_t isprime_low_ram_use(uintxx_t inp) {return (prime_splitter(inp).size()==1)?1:0;}
 
 
 namespace {   //unnamed--> do not use this 
-
 //note:  all functions below work perfect, they have been tested more than billion times
 	//but prime_splitter() is mutch faster with large numbers than next_prime() and isprime()
 	//even if it's result contains more information and it will use much less memory

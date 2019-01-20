@@ -103,7 +103,7 @@ constexpr flt _pit()	{return acos(_neg_one<flt>());}	//can be positive pi or neg
 template<class flt>
 constexpr flt _PI(void)	{//copute pi at compiletime (3.1415..............)
 return (_pit<flt>() >= _zero<flt>())? _pit<flt>() : (_neg_one<flt>()*_pit<flt>());
-}//returns positive pi at compiletime 
+}	//returns positive pi at compiletime
 
 template<class flt>
 constexpr flt _e(void) {return ::exp(_one<flt>());}//compute "eulers number" at compilet. (2.718281...)
@@ -111,7 +111,7 @@ constexpr flt _e(void) {return ::exp(_one<flt>());}//compute "eulers number" at 
 constexpr auto _GRAD_P_RAD (180.0/rom::_PI<double>());	//conversion factor of angle units
 constexpr auto _RAD_P_GRAD (rom::_PI<double>()/180.0);	//conversion factor of angle units
 
-constexpr auto _M_P_FEET(double(0.3048));	//speed unit conversion factor
+constexpr auto _M_P_FEET(double(0.3048));	//length unit conversion factor
 constexpr auto _KNOT_P_MPS(double(1.943844));  	//speed unit conversion factor
 constexpr auto _MPS_P_KNOT (_one<double>()/_KNOT_P_MPS);//speed unit conversion factor
 

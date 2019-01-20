@@ -3,7 +3,6 @@
 #include <complex>
 #include <type_traits>
 #include <thread>
-#include <mutex>
 #include "rom_error.h"
 #include "rom_globals.h"
 #include "rom_prime.h"
@@ -31,6 +30,89 @@ std::copy(inp_begin,inp_end,out_begin);		//out_end should be just fine  :-)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class iter>	//at least bidirectional iterator
+class iter_range;	//pre declaration
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class iter>	//at least bidirectional iterator
+class iter_range {	//this class should add functionality of std::vector to a range of iterators
+private:
+iter first;		//points to the first element in the lange
+iter last;		//ponts to the last element inrange, not one past the last!!!!!
+size_t stp;		//how often you mus increment an iterator to get the next element
+
+public:
+typedef typename std::iterator_traits<iter>::value_type value_type;
+
+//get the number of elements in the range
+size_t size(void) const {return (std::distance(first,last)+stp)/stp;}
+
+//get the spacing between elements in range
+size_t step(void) const {return stp;}
+
+//get iterator to first element
+iter begin(void) const {return first;}
+
+//get element at position  //use it like std::vector<>.at()
+value_type& at(size_t pos) {return *std::next(first,pos*stp);}
+
+//constructor overload default 2 parameters begin() and end()
+iter_range(iter beg_in, iter end_in,size_t step_in = 1):first(),last(),stp() {
+if (size_t(std::distance(beg_in,end_in))%step_in) {
+	rom::error("You are trying to access an IteratorRange of size "+
+		std::to_string(std::distance(beg_in,end_in))+" with a step of "+
+		std::to_string(step_in)+" its size would be "+
+		std::to_string(float(std::distance(beg_in,end_in))/float(step_in))+" .");
+	}
+stp=	step_in;
+first=	beg_in;
+last=	std::prev(end_in,stp);  	//points to the last element
+}
+
+//constructor overload if you try to split an range into smaler iter_range
+iter_range(iter beg_in, iter end_in,size_t step_in,size_t ofset_in):first(),last(),stp() {
+size_t size_inp = std::distance(beg_in,end_in);
+if (size_inp % step_in) {
+	rom::error("You are trying to access an IteratorRange of size "+
+		std::to_string(std::distance(beg_in,end_in))+" with a step of "+
+		std::to_string(step_in)+" its size would be "+
+		std::to_string(float(std::distance(beg_in,end_in))/float(step_in))+" .");
+	}
+if (ofset_in >= step_in) {rom::error("offset for iterator_range has to be smaller than step");}
+first=	std::next(beg_in,ofset_in);
+stp=	step_in;
+size_t size = size_inp / step_in; 	//integeger division should work fine here
+last = 	std::next(first,(size-1)*stp);
+}
+
+//constructor overload if you try to create an iterator_range based on another iterator_range
+iter_range(const iter_range& range_in,size_t step_in,size_t ofset_in):first(),last(),stp() {
+if (range_in.size() % step_in) {
+	rom::error("You are trying to access an IteratorRange of size "+
+		std::to_string(range_in.size())+" with a step of "+
+		std::to_string(step_in)+" its size would be "+
+		std::to_string(range_in.size()/float(step_in))+" .");
+	}
+if (ofset_in >= step_in) {rom::error("offset for iterator_range has to be smaller than step");}
+first =	std::next(range_in.begin(),ofset_in*range_in.step());
+stp =	step_in*range_in.step();
+size_t size = range_in.size() / step_in; 	//integeger division should work fine here
+last = 	std::next(first,(size-1)*stp);
+}
+};
+
+//this function should help to split a range of iterators for fft functions
+template<class iter>
+std::vector<iter_range<iter>> iter_splitter(iter_range<iter> range_in, size_t n) {
+if (range_in.size() % n) {rom::error("cannot perform splitting of iterator range");}
+std::vector<iter_range<iter>> ret;
+for (size_t i=0; i!=n;++i)  {ret.push_back(iter_range<iter>(range_in,n,i));}
+return ret;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<class RamIt>//ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
 class dft {	//template-functor-class
@@ -54,6 +136,18 @@ for (decltype(n) k = 0; k < n; k++) {		//Perform the discrete fourier transf.
 rom::copy_range_checked(result.begin(),result.end(),first,last);//copy result back to the input range
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+//overload for rom::iter_range
+void operator()(iter_range<RamIt> itvec) {
+auto n=itvec.size();
+std::vector<value_type> result(n,rom::_complex_zero<flt>());//prepare a container for temporary values
+for (size_t k = 0; k < n; ++k) {		//Perform the discrete fourier transf.
+        for (size_t j = 0; j < n; ++j) {
+		flt angle = 2.0 * rom::_PI<flt>() * k * j / flt(n);
+                result.at(k) += itvec.at(j) * std::exp(angle * rom::_i<flt>());
+		}
+	}
+for (size_t k = 0; k < n; ++k) {itvec.at(k) = result.at(k);}
+}
 
 //reverse() performs the inversion of discrete fourier transformation as it's described in your math books
 void reverse(RamIt first, RamIt last)	{	//input iterator-range
@@ -69,8 +163,8 @@ rom::copy_range_checked(aut.begin(),aut.end(),first,last);//copy result back to 
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<class RamIt>//ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
-class ffte {	//template-functor-class
+template<class RamIt>	//ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
+class ffte {		//template-functor-class
 public:
 typedef typename std::iterator_traits<RamIt>::value_type value_type;//this should be std::complex<float>
 typedef typename value_type::value_type flt;		//float, double or long double
@@ -85,20 +179,20 @@ auto mods = primes.front();/*primes.pop_back();*///get largest primefactor at th
 auto modsize = (size/mods);                     //if size is a primenumber -> modsize should be 1
 //split input range in to 2d std::vector and recursively feed in to our own class; fist dimension is the number of mods
 std::vector<std::vector<value_type>>delegator(mods);//2d vector with size() == mods
-for (auto& a:delegator) {a.resize(modsize);}    //resize subvectors	//second dimension should be modsize
-auto frs = first;
-for (size_t i=0;i<size;++i) {delegator.at(i%mods).at(i/mods)=*(frs++);}	//copy all inputdata into it
-for (auto& a:delegator) {ffte{}(a.begin(),a.end());}	//let's perform all the smaller fft's
+for (auto& del:delegator) {del.resize(modsize);}    //resize subvectors	//second dimension should be modsize
 auto a = first;
-for (size_t k=0; k<size;++k,++a) {   //output number
+for (size_t i=0;i<size;++i) {delegator.at(i%mods).at(i/mods)=*(a++);}	//copy all inputdata into it
+for (auto& del:delegator) {ffte{}(del.begin(),del.end());}	//let's perform all the smaller fft's
+a=first;
+for (size_t k=0; k<size;++k,++a) {	//output number
 	(*a) = rom::_complex_zero<flt>();
         size_t pos = (k % modsize);
-        for (decltype(mods) mod=0;mod<mods;++mod) {     //mods
+        for (decltype(mods) mod=0;mod<mods;++mod) {	//mods
                 flt alpha = 2.0*rom::_PI<flt>()*mod*k/flt(size);
                 auto element = delegator.at(mod).at(pos);
-                element *= exp( rom::_i<flt>() * alpha); 	//TODO check if this works as expected
+                element *= exp( rom::_i<flt>() * alpha); //ToDo check if this works as expected
                 (*a) += element;
-                }
+		}
         }
 }
 
@@ -112,7 +206,7 @@ for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(firs
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<class RamIt>	//ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
+template<class RamIt>	//random-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
 class mt_ffte {    	//template-functor-class
 public:
 typedef typename std::iterator_traits<RamIt>::value_type value_type;//this should be std::complex<float>
@@ -124,7 +218,7 @@ void operator ()(RamIt first, RamIt last,uint32_t maxthr=32) {
 if (std::distance(first,last)<=1) {return;}     //if input contains 1 sample --> do nothing
 auto size = size_t(std::distance(first,last));  //number  of samples
 auto primes = rom::prime_splitter(size);        //make a prime-factorization of the sample size,
-auto mods = primes.front();/*primes.pop_back();*///get largest primefactor at the end of std::vector
+auto mods = primes.front();			//get smalest primefactor at the begin of std::vector
 auto modsize = (size/mods);                     //if size is a primenumber -> modsize should be 1
 //split input range in to 2d std::vector and recursively feed in to our own class; fist dimension is the number of mods
 std::vector<std::vector<value_type>>delegator(mods);//2d vector with size() == mods
@@ -139,18 +233,18 @@ if (maxthr>=mods) {	//multithread
 		}
 	for (auto& one:thr)       {one.join();}
 	}
-	else {//single thread
+	else {		//single thread
 	for (auto& a:delegator) {mt_ffte{}(a.begin(),a.end(),(maxthr/mods));}    //let's perform all the smaller fft's
 	}
-auto a = first;
-for (size_t k=0; k<size;++k,++a) {   //output number
-        (*a) = rom::_complex_zero<flt>();
+frs=first;
+for (size_t k=0; k<size;++k,++frs) {   //output number
+        (*frs) = rom::_complex_zero<flt>();
         size_t pos = (k % modsize);
         for (decltype(mods) mod=0;mod<mods;++mod) {     //mods
                 flt alpha = 2.0*rom::_PI<flt>()*mod*k/flt(size);
                 auto element = delegator.at(mod).at(pos);
                 element *= exp( rom::_i<flt>() * alpha);        //TODO check if this works as expected
-                (*a) += element;
+                (*frs) += element;
                 }
         }
 }
@@ -164,6 +258,67 @@ for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(firs
 };//class mt_ffte
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class RamIt>
+class exp_ffte;
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class RamIt>   //ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
+class exp_ffte {	//template-functor-class
+public:
+
+static void engine(iter_range<RamIt> itvec,size_t maxthr=32) {
+size_t sz =itvec.size();
+if (sz <= 1) {return;}//break recursion
+auto primes = rom::prime_splitter(sz);
+if (primes.size()==1) {//shortcut //no acceleration if size of input is prime number; sorry
+	rom::dft<RamIt>{}(itvec);
+	return;
+	}
+auto mods = primes.front();
+auto modsize = (sz/mods);
+std::vector<iter_range<RamIt>> delegator = iter_splitter(itvec,mods);
+if (maxthr>=mods) {	//multithread
+        std::vector<std::thread> thr{};	//vector of threads
+	for (auto& del:delegator) {
+		exp_ffte<RamIt> obj;
+		thr.push_back(std::thread(exp_ffte<RamIt>{}.engine,del,(maxthr/mods)));
+//		thr.push_back(std::thread(exp_ffte<RamIt>{},del,(maxthr/mods)));	//does not work
+		}
+	for (auto& one:thr)       {one.join();}
+	}
+else	{for (auto& del:delegator) {engine(del,maxthr/mods);}}	//do it all in this thread
+std::vector<value_type> retvec(sz,rom::_complex_zero<flt>());
+for (size_t k=0; k<sz;++k) {   //output number
+	auto ret = rom::_complex_zero<flt>();
+        size_t pos = (k % modsize);
+        for (size_t mod=0;mod<mods;++mod) {     //mods
+                flt alpha = 2.0*rom::_PI<flt>()*mod*k/static_cast<flt>(sz);
+                auto element = delegator.at(mod).at(pos);
+                element *= exp( rom::_i<flt>() * alpha); 	//TODO check if this works as expected
+                ret += element;
+                }
+	retvec.at(k)=(ret);
+        }
+for (size_t k=0; k!=sz;++k)	{itvec.at(k) = retvec.at(k);}
+}
+
+public:
+typedef typename std::iterator_traits<RamIt>::value_type value_type;//this should be std::complex<float>
+typedef typename value_type::value_type flt;            //float, double or long double
+
+exp_ffte(void) {}   //nothing to do  ;-)
+
+void operator() (iter_range<RamIt> itv)	  {this->engine(itv);}	//delegate to engine()
+void operator() (RamIt first, RamIt last) {this->engine(iter_range<RamIt>(first,last));}//delegate to engine()
+
+void reverse(RamIt first, RamIt last) {         //inverse fourier transformation for 1 dimensional input
+for (auto it=first;it!=last;++it) {(*it) = std::conj(*it);}             //conjugate the complex numbers
+exp_ffte{}(first,last);                             //perform fft
+for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(first,last));}   //conjugate the c$
+}
+
+}; //class exp_ffte
 
 
 //-----Testfunction-----performance-testing
@@ -199,7 +354,7 @@ return 1;
 }
 
 public:
-fourier_test(void) {}
+fourier_test(void):inp(),copy(),fur(),start(),stop() {}
 
 void operator()(void) {
 start = rom::mashinetime();
@@ -216,7 +371,6 @@ std::cout<<times<< " fourier transformations of size " << size <<" took " <<(sto
 };  //class fourier_test
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 
 } //namespae rom

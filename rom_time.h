@@ -61,7 +61,7 @@ if (dt>=0.999) {			//recursion if dt is longer than 1.0 seconds
 	return;
 	}
 static uint64_t ns;	ns = static_cast<uint64_t>(dt * _ns_p_s);
-static struct timespec req={0},rem={0};
+static struct timespec req={0,0},rem={0,0};
 req.tv_sec=time_t(0);
 req.tv_nsec=ns;
 nanosleep(&req,&rem);
@@ -121,7 +121,7 @@ sleepdelay sleep;
 delay	del;
 
 public:
-autodelay(double expected_dt= _micro<double>()) {}
+autodelay():sheep(),sleep(),del() {}
 
 inline void operator()(float sec) {
 if (sec < 1.0 * _micro<float>()) {sheep(sec);}

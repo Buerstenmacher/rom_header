@@ -85,9 +85,7 @@ return os.str();
 }
 
 void rom_rand_t(void) {
-uint64_t i;
-double d;
-for (i=1; i<=(2.0*rom::_hecto<double>()*rom::_mega<double>());i*=2) {
+for (uint64_t i=1; i<=(2.0*rom::_hecto<double>()*rom::_mega<double>());i*=2) {
         std::cout<<"N: "<<i<<" \tPi: " <<monte_carlo_pi(i)<<" \tzero: "<< sign_test(i)<<rom_rand_test(double(i))<<"\n";
 	}
 }

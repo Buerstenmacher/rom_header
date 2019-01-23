@@ -28,28 +28,17 @@ rom_header:	Collection of C++11
 		<RamIt> random-access-iterator to std::complex<double> 
 		The most general form of the Fourier transformation takes a complex input 
 		and returns a complex result
-		-->rom::dft{} 
+		-->rom::auto_fft{} 
 		constructor without input
-		-->rom::dft.operator()(RamIt,RamIt)
+		-->rom::auto_fft.operator()(RamIt,RamIt)
 		will perform a discrete-fourier-transformation on the Input-Range	
-		-->rom::dft.reverse(RamIt,RamIT)
+		-->rom::auto_fft.reverse(RamIt,RamIT)
 		will perform an inverse discrete-fourier-transformation on the Input-Range					
-
-
-		Functor-class-template
-		<RamIt> random-access-iterator to std::complex<double> 
-		-->rom::ffte{}  //the best fft function this close to the east pole  ;-)
-		Does the same as rom::dft{} but is much faster.
 		It uses O(n*log(n)) complexity for all sizes of Input except large prime numbers
 
-		.
-		.
-		.
 
 
 
-.
-.
 .
 .
 .

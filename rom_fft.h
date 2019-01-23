@@ -29,8 +29,9 @@ if (std::distance(inp_begin,inp_end) != std::distance(out_begin,out_end)){	//tri
 std::copy(inp_begin,inp_end,out_begin);		//out_end should be just fine  :-)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+} //namespae rom
 
-
+namespace  {//anonymous!!!
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 template<class iter>	//at least bidirectional iterator
 class iter_range;	//pre declaration
@@ -139,8 +140,8 @@ rom::copy_range_checked(result.begin(),result.end(),first,last);//copy result ba
 //overload for rom::iter_range
 void operator()(iter_range<RamIt> itvec) {
 auto n=itvec.size();
-std::vector<value_type> result(n,rom::_complex_zero<flt>());//prepare a container for temporary values
-for (size_t k = 0; k < n; ++k) {		//Perform the discrete fourier transf.
+std::vector<value_type> result(n,rom::_complex_zero<flt>());	//prepare a container for temporary values
+for (size_t k = 0; k < n; ++k) {				//Perform the discrete fourier transf.
         for (size_t j = 0; j < n; ++j) {
 		flt angle = 2.0 * rom::_PI<flt>() * k * j / flt(n);
                 result.at(k) += itvec.at(j) * std::exp(angle * rom::_i<flt>());
@@ -163,6 +164,7 @@ rom::copy_range_checked(aut.begin(),aut.end(),first,last);//copy result back to 
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Fast but takes a lot of RaM
 template<class RamIt>	//ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
 class ffte {		//template-functor-class
 public:
@@ -206,6 +208,7 @@ for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(firs
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Mutithread is even faster but takes more RaM
 template<class RamIt>	//random-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
 class mt_ffte {    	//template-functor-class
 public:
@@ -252,7 +255,7 @@ for (size_t k=0; k<size;++k,++frs) {   //output number
 void reverse(RamIt first, RamIt last) {         //inverse fourier transformation for 1 dimensional input
 for (auto it=first;it!=last;++it) {(*it) = std::conj(*it);}             //conjugate the complex numbers
 mt_ffte{}(first,last);                             //perform fft
-for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(first,last));}   //conjugate the c$
+for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(first,last));}	//conjugate the again
 }
 
 };//class mt_ffte
@@ -260,19 +263,18 @@ for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(firs
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-template<class RamIt>
-class exp_ffte;
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+//Mutithread with reduced RaM demand; ideal for giant fft's with size above 2^20
 template<class RamIt>   //ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
 class exp_ffte {	//template-functor-class
-public:
+private:
 
 static void engine(iter_range<RamIt> itvec,size_t maxthr=32) {
 size_t sz =itvec.size();
-if (sz <= 1) {return;}//break recursion
+if (sz <= 1) {return;}	//break recursion
 auto primes = rom::prime_splitter(sz);
-if (primes.size()==1) {//shortcut //no acceleration if size of input is prime number; sorry
-	rom::dft<RamIt>{}(itvec);
+if (primes.size()==1) {	//shortcut //no acceleration if size of input is prime number; sorry
+	dft<RamIt>{}(itvec);
 	return;
 	}
 auto mods = primes.front();
@@ -293,7 +295,7 @@ for (size_t k=0; k<sz;++k) {   //output number
 	auto ret = rom::_complex_zero<flt>();
         size_t pos = (k % modsize);
         for (size_t mod=0;mod<mods;++mod) {     //mods
-                flt alpha = 2.0*rom::_PI<flt>()*mod*k/static_cast<flt>(sz);
+                flt alpha = 2.0*rom::_PI<flt>() * mod * k / static_cast<flt>(sz);
                 auto element = delegator.at(mod).at(pos);
                 element *= exp( rom::_i<flt>() * alpha); 	//TODO check if this works as expected
                 ret += element;
@@ -319,7 +321,34 @@ for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(firs
 }
 
 }; //class exp_ffte
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+} //namespace unnamed
 
+namespace rom {
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+template<class RamIt>   //ranom-access-iter to std::complex<double>, std::complex<float> or std::complex<long double>
+class auto_fft {	//template-functor-class
+public:
+typedef typename std::iterator_traits<RamIt>::value_type value_type;//this should be std::complex<float>
+typedef typename value_type::value_type flt;            //float, double or long double
+
+auto_fft(void) {}
+
+void operator() (RamIt first, RamIt last) {//delegate to fft classes
+size_t size = std::distance(first,last);
+if (size<=rom::_kilo<flt>()) 	{dft<RamIt>{}(first,last);}//use discrete fourier transf. for small sizes
+else if (size<=rom::_mega<flt>())		{mt_ffte<RamIt>{}(first,last);}//use fastest solution for larger sizes
+else 	{exp_ffte<RamIt>{}(first,last);}	//use the solution with the least memory demand for giant sizes
+}
+
+void reverse(RamIt first, RamIt last) {//delegate to fft classes
+size_t size = std::distance(first,last);
+if (size<=rom::_kilo<flt>()) 	{dft<RamIt>{}.reverse(first,last);}
+else if (size<=rom::_mega<flt>())		{mt_ffte<RamIt>{}.reverse(first,last);}
+else 	{exp_ffte<RamIt>{}.reverse(first,last);}
+}
+
+};	//class auto_fft
 
 //-----Testfunction-----performance-testing
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -372,7 +401,7 @@ std::cout<<times<< " fourier transformations of size " << size <<" took " <<(sto
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 } //namespae rom
+
 #endif //rom_fft_h
 

@@ -58,6 +58,8 @@ iter begin(void) const {return first;}
 //get element at position  //use it like std::vector<>.at()
 value_type& at(size_t pos) {return *std::next(first,pos*stp);}
 
+value_type& operator [](size_t pos) {return *(first+(pos*stp));}
+
 //constructor overload default 2 parameters begin() and end()
 iter_range(iter beg_in, iter end_in,size_t step_in = 1):first(),last(),stp() {
 if (size_t(std::distance(beg_in,end_in))%step_in) {
@@ -101,6 +103,30 @@ stp =	step_in*range_in.step();
 size_t size = range_in.size() / step_in; 	//integeger division should work fine here
 last = 	std::next(first,(size-1)*stp);
 }
+
+iter_range<iter>& operator=(const std::vector<value_type>& other) {// copy assignment
+if (other.size() != this->size()) {rom::error("assignment of wrong sized std::vector to iter_range");}
+for (size_t k=0; k != other.size(); ++k) {this->operator[](k) = other[k];}
+return *this;
+}
+
+// assume the object holds reusable storage, such as a heap-allocated buffer mArray
+/*T& operator=(const T& other) // copy assignment
+{
+    if (this != &other) { // self-assignment check expected
+        if (other.size != size) {         // storage cannot be reused
+            delete[] mArray;              // destroy storage in this
+            size = 0;
+            mArray = nullptr;             // preserve invariants in case next line throws
+            mArray = new int[other.size]; // create storage in this
+            size = other.size;
+        }
+        std::copy(other.mArray, other.mArray + other.size, mArray);
+    }
+    return *this;
+}
+
+*/
 };
 
 //this function should help to split a range of iterators for fft functions
@@ -140,14 +166,16 @@ rom::copy_range_checked(result.begin(),result.end(),first,last);//copy result ba
 //overload for rom::iter_range
 void operator()(iter_range<RamIt> itvec) {
 auto n=itvec.size();
-std::vector<value_type> result(n,rom::_complex_zero<flt>());	//prepare a container for temporary values
+std::vector<value_type> result(0,rom::_complex_zero<flt>());	//prepare a container for temporary values
 for (size_t k = 0; k < n; ++k) {				//Perform the discrete fourier transf.
+	result.push_back(rom::_complex_zero<flt>());
         for (size_t j = 0; j < n; ++j) {
 		flt angle = 2.0 * rom::_PI<flt>() * k * j / flt(n);
                 result.at(k) += itvec.at(j) * std::exp(angle * rom::_i<flt>());
 		}
 	}
-for (size_t k = 0; k < n; ++k) {itvec.at(k) = result.at(k);}
+//for (size_t k = 0; k < n; ++k) {itvec.at(k) = result.at(k);}
+itvec = result;
 }
 
 //reverse() performs the inversion of discrete fourier transformation as it's described in your math books
@@ -270,15 +298,18 @@ class exp_ffte {	//template-functor-class
 private:
 
 static void engine(iter_range<RamIt> itvec,size_t maxthr=32) {
-size_t sz =itvec.size();
+uint32_t sz = itvec.size();
+uint32_t mods,modsize;
 if (sz <= 1) {return;}	//break recursion
-auto primes = rom::prime_splitter(sz);
-if (primes.size()==1) {	//shortcut //no acceleration if size of input is prime number; sorry
-	dft<RamIt>{}(itvec);
-	return;
-	}
-auto mods = primes.front();
-auto modsize = (sz/mods);
+	{		//block scope for local variables
+	auto primes = rom::prime_splitter(sz);
+	if (primes.size()==1) {	//shortcut //no acceleration if size of input is prime number; sorry
+		dft<RamIt>{}(itvec);
+		return;
+		}
+	mods = primes.front();
+	modsize = (sz/mods);
+	}	//destroy primes
 std::vector<iter_range<RamIt>> delegator = iter_splitter(itvec,mods);
 if (maxthr>=mods) {	//multithread
         std::vector<std::thread> thr{};	//vector of threads
@@ -289,20 +320,26 @@ if (maxthr>=mods) {	//multithread
 		}
 	for (auto& one:thr)       {one.join();}
 	}
-else	{for (auto& del:delegator) {engine(del,maxthr/mods);}}	//do it all in this thread
-std::vector<value_type> retvec(sz,rom::_complex_zero<flt>());
+else	{for (auto& del:delegator) {engine(del,maxthr/mods);}}	//single thread
+std::vector<value_type> retvec(0,rom::_complex_zero<flt>());
+constexpr flt two_pi{rom::_PI<flt>()*2.0};		//precompute this values or use compiler optimisation "-O2"
+constexpr std::complex<flt> imaginary {rom::_i<flt>()};	//if you compute everything inside the for loop
+flt alpha{0.0};
+value_type element{rom::_complex_zero<flt>()};
 for (size_t k=0; k<sz;++k) {   //output number
 	auto ret = rom::_complex_zero<flt>();
         size_t pos = (k % modsize);
+	flt precalc = two_pi * k /static_cast<flt>(sz);
         for (size_t mod=0;mod<mods;++mod) {     //mods
-                flt alpha = 2.0*rom::_PI<flt>() * mod * k / static_cast<flt>(sz);
-                auto element = delegator.at(mod).at(pos);
-                element *= exp( rom::_i<flt>() * alpha); 	//TODO check if this works as expected
+		alpha = precalc * mod;
+		element = delegator.at(mod).at(pos);
+                element *= exp( imaginary * alpha); 	//TODO check if this works as expected
                 ret += element;
                 }
-	retvec.at(k)=(ret);
+	retvec.push_back(ret);
         }
-for (size_t k=0; k!=sz;++k)	{itvec.at(k) = retvec.at(k);}
+//for (size_t k=0; k!=sz; ++k)	{itvec.at(k) = retvec.at(k);}
+itvec = retvec;
 }
 
 public:
@@ -344,7 +381,7 @@ else 	{exp_ffte<RamIt>{}(first,last);}	//use the solution with the least memory 
 void reverse(RamIt first, RamIt last) {//delegate to fft classes
 size_t size = std::distance(first,last);
 if (size<=rom::_kilo<flt>()) 	{dft<RamIt>{}.reverse(first,last);}
-else if (size<=rom::_mega<flt>())		{mt_ffte<RamIt>{}.reverse(first,last);}
+else if (size<rom::_mega<flt>())		{mt_ffte<RamIt>{}.reverse(first,last);}
 else 	{exp_ffte<RamIt>{}.reverse(first,last);}
 }
 

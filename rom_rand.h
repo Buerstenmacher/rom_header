@@ -6,6 +6,7 @@
 #include <limits>
 #include <functional>
 #include <sstream>
+#include "rom_globals.h"
 
 namespace rom {
 

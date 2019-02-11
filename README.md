@@ -1,53 +1,43 @@
 Repository	
-rom_header:	Collection of C++11   
+rom_header:	Collection of C++11 Tools  
 
 	File
 	rom_error.h:	basic error handling
-
-		Function
-		-->rom::error(std::string)	
-		use it to quit your program before it does something bad (division by zero,...)
-		It will send a message to standard output and tell your os that an error occurred
-
-		Function
-		-->rom::ok(void)
-		use it to quit your program without error
+	//description is in the file itself 
 
 	File
 	rom_fft.h:	a colection of functions and classes that can make Fourier transformations
+	//usage example is on the end of the file 
 
-		Function-Template
-		<it_i,it_o> input-iterator, output-iterator
-		-->rom::copy_range_checked(it_i,it_i,it_o,it_o)
-		It will check the size of two iterator-Ranges.
-		It will quit your program if the size does not match.
-		If the sizes match, it will behave like std::cpoy
-		Copies the elements in the range [it_i,it_i) into the range [it_o,it_o)
+	File
+	rom_globals.h:	 some definitions of physical constants (compute it at compiletime with constexpr feature)
+	//description is in the file itself 
 
-		Functor-class-template			
-		<RamIt> random-access-iterator to std::complex<double> 
-		The most general form of the Fourier transformation takes a complex input 
-		and returns a complex result
-		-->rom::auto_fft{} 
-		constructor without input
-		-->rom::auto_fft.operator()(RamIt,RamIt)
-		will perform a discrete-fourier-transformation on the Input-Range	
-		-->rom::auto_fft.reverse(RamIt,RamIT)
-		will perform an inverse discrete-fourier-transformation on the Input-Range					
-		It uses O(n*log(n)) complexity for all sizes of Input except large prime numbers
+	File
+	rom_prime.h:	some functions fo integer crunshing; includes a fast function for prime factorisation
+	//description is in the file itself 
+
+	File
+	rom_rand.h:	Wrapper for complicated mersenne_twister random generator
+	//description is in the file itself 
+
+	File
+	rom_stream.h:	Adding functionality to some c++ standard container
+	//description is in the file itself 
+
+	File
+	rom_time.h:	basic timing Library; should simplify the use of c++11 clocks
+	//description is in the file itself 
+
+	File
+	rom_wiringpin.h:	wrapper for wiringPi library
+	//it depends on installed wiringPi and beeing on an raspberryPi computer
+
+
+	
+
+ 
 
 
 
 
-.
-.
-.
-.
-.
-.
-.
-.
-.
-.
-.
-.

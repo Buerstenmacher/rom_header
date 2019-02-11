@@ -3,11 +3,15 @@
 #include <complex>
 #include <type_traits>
 #include <thread>
+#include <iostream>
+#include <iomanip>
 #include "rom_error.h"
 #include "rom_globals.h"
 #include "rom_prime.h"
 #include "rom_rand.h"
 #include "rom_time.h"
+#include "rom_stream.h"
+
 
 #ifndef rom_fft_h
 #define rom_fft_h
@@ -351,9 +355,9 @@ exp_ffte(void) {}   //nothing to do  ;-)
 void operator() (iter_range<RamIt> itv)	  {this->engine(itv);}	//delegate to engine()
 void operator() (RamIt first, RamIt last) {this->engine(iter_range<RamIt>(first,last));}//delegate to engine()
 
-void reverse(RamIt first, RamIt last) {         //inverse fourier transformation for 1 dimensional input
-for (auto it=first;it!=last;++it) {(*it) = std::conj(*it);}             //conjugate the complex numbers
-exp_ffte{}(first,last);                             //perform fft
+void reverse(RamIt first, RamIt last) {		//inverse fourier transformation for 1 dimensional input
+for (auto it=first;it!=last;++it) {(*it) = std::conj(*it);}	//conjugate the complex numbers
+exp_ffte{}(first,last);				//perform fft
 for (auto it=first;it!=last;++it) {(*it) = std::conj(*it)/flt(std::distance(first,last));}   //conjugate the c$
 }
 
@@ -437,8 +441,39 @@ std::cout<<times<< " fourier transformations of size " << size <<" took " <<(sto
 };  //class fourier_test
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 } //namespae rom
+
+////////////////////////////////////////////////
+//--------EXAMPLE USE OF rom_fft.h -------------
+////////////////////////////////////////////////
+
+void rom_fft_t(void){
+//create a std::vector of floating point values
+std::vector<double> data{0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+std::cout << std::fixed <<std::setw(6)<< std::setprecision(2);
+std::cout <<"Input data: \t"<<std::endl<< data<<std::endl;
+
+//convert real values to complex values
+auto cmplx_data = rom::real_to_complex(data.begin(),data.end());
+std::cout <<"Complex data: \t"<<std::endl<< cmplx_data<<std::endl;
+
+//perform fft
+rom::auto_fft<decltype(cmplx_data.begin())>{}(cmplx_data.begin(),cmplx_data.end());
+std::cout <<"FFT of complex data: \t"<<std::endl<< cmplx_data<<std::endl;
+
+//reverse fft
+rom::auto_fft<decltype(cmplx_data.begin())>{}.reverse(cmplx_data.begin(),cmplx_data.end());
+std::cout <<"Recalculated original data: \t"<<std::endl<< cmplx_data<<std::endl;
+std::cout << std::endl;
+
+constexpr uint32_t n =1048576*4;
+std::cout <<"Performance test of rom::auto_fft<>{}() with "<< n <<" values of std::complex<float>."<< std::endl;;
+rom::fourier_test<rom::auto_fft<std::vector<std::complex<float>>::iterator>,n,1> fut1{};
+fut1();
+
+
+}
+
 
 #endif //rom_fft_h
 

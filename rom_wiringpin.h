@@ -16,22 +16,13 @@ int8_t wp;      //pinnumber for wiringPi;
 uint8_t val;    //last output value: 0->low  1->high  3->input
 
 static uint8_t wp_is_setup(uint8_t inp = 0) {
-static uint8_t is_it{0};	//this static variabe should tell us if wiringPiSetup had been called in the past
+static uint8_t is_it{0};//this static variabe should tell us if wiringPiSetup had been called in the past
 if (inp) {is_it = 1;}
 return is_it;
 }
 
-inline void pullhi() {if (val != rom::_HIGH)	{digitalWrite(wp,rom::_HIGH);}}
-
-inline void pulllo() {if (val != rom::_LOW)	{digitalWrite(wp,rom::_LOW);}}
-
-inline void flow() {
-if (val != 3)	{pinMode(wp,INPUT);}
-val = 3;
-}
-
 public:
-friend std::ostream& operator<<(std::ostream& os, const wiringpin& pin) {return os << "WirinPi: "<<uint16_t(pin.wp);}
+friend std::ostream& operator<<(std::ostream& os, const wiringpin& pin) {return os << "WiringPi: "<<uint16_t(pin.wp);}
 
 wiringpin(int8_t nr):wp(nr),val{3} {
 if (wp_is_setup() == 0) {
@@ -44,15 +35,32 @@ else {rom::error("Pin number "+std::to_string(wp)+" is not defined in wirinPi-Li
 
 ~wiringpin(void) {pinMode(wp,INPUT);}//high impendance input state for abandoned pins is the safest choice
 
-inline void write(uint8_t bit) {
+inline void pullhi() {	//set digital output to high voltage
+if (val == 3)           {pinMode(wp,OUTPUT);}
+if (val != rom::_HIGH)	{digitalWrite(wp,rom::_HIGH);}
+val =1;
+}
+
+inline void pulllo() {	//set digital output to low voltage
+if (val == 3)           {pinMode(wp,OUTPUT);}
+if (val != rom::_LOW)	{digitalWrite(wp,rom::_LOW);}
+val =0;
+}
+
+inline void flow() {	//switch gpio to high impendance input
+if (val != 3)     {pinMode(wp,INPUT);}
+val =3;
+}
+
+inline void write(uint8_t bit) {	//write 0 or 1 to gpio output
 {if 	(val == 3)	{pinMode(wp,OUTPUT);}}
-{if 	(bit ==_LOW)	{pulllo();}
-else if (bit ==_HIGH)	{pullhi();}
+{if 	(bit ==rom::_LOW)	{pulllo();}
+else if (bit ==rom::_HIGH)	{pullhi();}
 else			{rom::error("error in function rom::wiringpin.write()");}}
 val =bit;
 }
 
-inline uint8_t read() {
+inline uint8_t read() {	//set gpio to input and read it's state
 flow();
 return digitalRead(wp);
 }
@@ -66,7 +74,7 @@ class pin:public wiringpin{     //this class simplifies the use of wiringpin,
 private:                        //you do not need to know the wiringpi-number of a pin
 
 static int8_t pintab(uint8_t inp) {
-static const std::array<int8_t,41> pintable  {    //you simply take the number of the pin itself
+static const std::array<int8_t,41> pintable  {	//you simply take the physical number of the pin itself
 //wPi   //Physical //wPi //physical
 -1,      //0
 -1,     /*1*/
@@ -103,13 +111,14 @@ pin(uint8_t pinnr):wiringpin((pinnr<41)?pintab(pinnr):(-1)) {}
 
 void rom_wiringpin_t(void){
 rom::pin pin(40);
-for (uint16_t i{0};i<10;++i) {
+rom::autodelay delay{};
+for (uint16_t i{0};i<100;++i) {
 	std::cout << "1" <<std::endl;
 	pin.write(1);
-	delay (500) ;
+	delay(0.05) ;
 	std::cout << "0" <<std::endl;
 	pin.write(0);
-	delay (500) ;
+	delay(0.05) ;
 	}
 std::cout << std::endl;
 std::cout << static_cast<uint16_t>(pin.read()) << std::endl;

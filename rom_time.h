@@ -79,7 +79,7 @@ inline void sheepcount(volatile uint32_t in) {while(in) {--in;}}
 
 double sheep_p_s(void) {        //bestimmt wieviel der prozessor in einer sekunde zaehlen kann
 double t1,t2;                   //ca 100 000 000 schaft der raspberry pi II
-uint32_t sheeps = 1000*1000*100;
+uint32_t sheeps = 1000*1000*10;
 t1 = mashinetime();
 sheepcount(sheeps);
 t2 = mashinetime();
@@ -88,7 +88,7 @@ return sheeps/(t2-t1);
 
 double functioncall_p_s(void) { //bestimmt wie oft der prozessor die leere funktion pro sek ausführen kann
 double t1,t2;                   //ca 30 000 000 pro sekunde an rasperry pi II
-uint32_t n = 1000*1000*10;
+uint32_t n = 1000*1000*2;
 uint32_t i = n;
 t1 = mashinetime();
 while (n) {sheepcount(0);--n;}

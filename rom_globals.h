@@ -89,7 +89,7 @@ constexpr std::complex<ret> _complex_zero(){
 return std::complex<ret>{_zero<ret>(),_zero<ret>()};	//return zero in complex number
 }
 
-constexpr uint8_t _HIGH{uint8_t(_one<double>())};		//integer 1
+constexpr uint8_t _HIGH{uint8_t(_one<double>())};	//integer 1
 constexpr uint8_t _LOW {uint8_t(_zero<double>())};	//integer 0
 
 constexpr auto _EARTH_G(9.80665);	//[(m/(s*s))/G]  Surface acceleration on Earth (average Value)
@@ -137,22 +137,46 @@ constexpr fltp _max_acceptable_error(){
 return (std::numeric_limits<fltp>::epsilon()*256*1024); 	//i would accept a large multiple of epsilon()
 }//after a long chain of calculations, you should be able to calculate back without exceeding this error
 
+inline uint8_t getbit(uint8_t bytein, uint8_t nthbit) {//get the value of the nth bit of one uint8_t
+if (nthbit>7) { return 0;}
+static uint8_t mask;
+mask = 1 << nthbit;
+return ((mask & bytein) >> nthbit);
+}
+
+inline uint8_t getbit(uint16_t bytein, uint8_t nthbit) {//get the value of the nth bit of one uint16_t
+if (nthbit>15) {return 0;}
+static uint16_t mask;
+mask = 1 << nthbit;
+return ((mask & bytein) >> nthbit);
+}
+
+inline uint8_t getbit(uint32_t bytein, uint8_t nthbit) {//get the value of the nth bit of one uint32_t
+if (nthbit>31) {return 0;}
+static uint32_t mask;
+mask = 1 << nthbit;
+return ((mask & bytein) >> nthbit);
+}
+
+inline uint8_t getbit(uint64_t bytein, uint8_t nthbit) {//get the value of the nth bit of one uint64_t
+if (nthbit>63) {return 0;}
+static uint64_t mask;
+mask = 1 << nthbit;
+return ((mask & bytein) >> nthbit);
+}
+
+uint8_t ob(uint8_t b7,uint8_t b6,uint8_t b5,uint8_t b4,uint8_t b3,uint8_t b2,uint8_t b1,uint8_t b0) {
+uint8_t tmp = (b7<<7)  + (b6<<6) + (b5<<5) + (b4<<4);
+tmp += (b3<<3) + (b2<<2) + (b1<<1) + (b0<<0);
+return tmp;
+}
+
+constexpr uint8_t cob(uint8_t b7,uint8_t b6,uint8_t b5,uint8_t b4,uint8_t b3,uint8_t b2,uint8_t b1,uint8_t b0) {
+return  (b7<<7)  + (b6<<6) + (b5<<5) + (b4<<4) + (b3<<3) + (b2<<2) + (b1<<1) + (b0<<0);
+}
 
 }	//namespace rom
 #endif	//rom_globals_h
 
 
 
-//	---Backup---
-/*
-#ifndef TRUE	//alternative to keyword "true"
-constexpr uint8_t TRUE (_zero < _one); 	//yes that's true ;-)
-#endif //TRUE
-
-#ifndef FALSE	//alternative to keyword "false"
-constexpr uint8_t FALSE {!TRUE};
-#endif //FALSE
-
-constexpr auto _true 	{TRUE};		//this is useles :-)  //you'l better use built in keywords
-constexpr auto _false	{FALSE};	//this aswell	;-)
-*/

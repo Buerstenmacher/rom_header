@@ -4,8 +4,8 @@
 #include <array>
 #include "rom_time.h"
 #include "rom_error.h"
-#include "wiringPi++.h"	//use of wiringPi++ c++ translation of wiringPi by Buerstenmacher aka (Roman Lechner)
-//#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
+//#include "wiringPi++.h"	//use of wiringPi++;  c++ translation of wiringPi by Buerstenmacher
+#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
 
 namespace rom{
 
@@ -77,13 +77,10 @@ do      {
                 }
         } while (read() != ROM_HIGH);
 return 0;  //Error? == false
-}
-*/
-
+}*/
 
 };	//wiringpin
 //-******************************************************************************
-
 
 //-******************************************************************************
 class pin:public wiringpin{     	//this class simplifies the use of wiringpin,
@@ -156,7 +153,7 @@ return 0;  //exit normally
 
 void clock_out_error(uint16_t times){
 while (times--) {
-        scl.pulllo();		rdel(bittime*1.5);
+        scl.pulllo();		rdel(bittime * 1.5);
         flow_and_wait(scl);	rdel(1.5 * bittime);
         }
 send_stop();
@@ -258,7 +255,7 @@ sda.flow();	//obsolete
 scl.flow();	//obsolete
 }
 
-rom::autodelay& borrow_delayclass(void) {	//classes that include an i2c master can get access to it's delay
+rom::autodelay& borrow_delayfunctor(void) {	//classes that include an i2c master can get access to it's delay
 return rdel;					//functor. This may save some time for initialisation
 }
 
@@ -270,7 +267,7 @@ return rdel;					//functor. This may save some time for initialisation
 
 uint8_t slave_detect() {
 uint8_t anzahl(0);
-std::cout << "Detecting I2c Slaves: \n"; 
+std::cout << "Detecting I2c Slaves: \n";
 for (uint8_t sadr=0;sadr<254;sadr+=2) {
         send_start();
         send_byte(uint8_t(sadr));
@@ -352,12 +349,13 @@ rdel(16.0*bittime);	//longer delay, i2c slave should get two bytes time bevor we
 if (read_u8_reg(reg,sad) != data) {  //reading register to check if slave had written everything properly
         std::cout<<"Sad: "<<uint16_t(sad)<<" | Reg: "<<uint16_t(reg)<<" | Data: "<<uint16_t(data);
 	std::cout<<" read_u8_reg(reg,sad) " <<uint16_t(read_u8_reg(reg,sad))<<std::endl;
-        rom::error("BlabLabla");
+        rom::error("Write command on i2cbus failed");
         }
 writecnt++;
 }
 }; //-******************************************************************************
 
+//this class alows you to comunicate with an humidity ad temperature sensor on "raspberry pi sense hat"
 class hts221 {//-***Capacitive digital sensor for relative humidity and temperat$
 private:
 i2c_master master;
@@ -413,41 +411,114 @@ return (double(low) + double(msb)*256.0)/8.0;
 
 int16_t t0_out(void)    {return master.read_s16_reg(T0_OUT,sad_write);}
 int16_t t1_out(void)    {return master.read_s16_reg(T1_OUT,sad_write);}
-public:
 
+public:
+//default constructor hts221 sensor on pins 8 and 9 (sda, scl) if you connect a sense hat directry to your
+//raspberry pi; i2c bus speed of 100khz is the most safe option (you can try 400 khz as well)
 hts221(uint8_t sda=8, uint8_t scl=9,double freq=100000):master(sda,scl,freq) {
-master.write_register(reg_CTRL_REG1,sad_write,(master.read_u8_reg(reg_CTRL_REG1,sad_write)|0x81));// Sensor einschalten und updaterate auf 1HZ einstellen
-master.write_register(reg_AV_CONF,sad_write,(master.read_u8_reg(reg_AV_CONF,sad_write) & 0xC0));// Alle Bits null setzten außer die zwei reservierten
-master.write_register(reg_AV_CONF,sad_write,(master.read_u8_reg(reg_AV_CONF,sad_write) | 0x24));// fuer Temperatur werden 32 werte gemittelt für Feuchtigkeit 64 werte
+master.write_register(reg_CTRL_REG1,sad_write,(master.read_u8_reg(reg_CTRL_REG1,sad_write)|0x81));//Sensor einschalten und updaterate auf 1HZ einstellen
+master.write_register(reg_AV_CONF,sad_write,(master.read_u8_reg(reg_AV_CONF,sad_write) & 0xC0));//Alle Bits null setzten ausser die zwei reservierten
+master.write_register(reg_AV_CONF,sad_write,(master.read_u8_reg(reg_AV_CONF,sad_write) | 0x24));//fuer Temperatur werden 32 werte gemittelt fuer Feuchtigkeit 64 werte
 std::vector<int16_t> trash_can;
-for (uint16_t i =0;i<100;i++) { //put first 100 Values in trash
+for (uint16_t i =0;i<100;i++) { 	//put first 100 Values in trash
         trash_can.push_back(h_out());   //That's required because this sensor delivers some wrong
         trash_can.push_back(t_out());   //readings after startup
-        master.borrow_delayclass()(0.005);
+        master.borrow_delayfunctor()(0.005);
         }
-trash_can.resize(0);            //empty trashcan
+trash_can.resize(0);            	//empty trashcan obsolete
 }
 
-double humidity(void) {
-static double k=0.0;
-static double n=0.0;
-if (k==0.0) {k = (h1_rh()-h0_rh()) / (h1_t0_out()-h0_t0_out());}  //Steigung [Luf$
-if (n==0.0) {n = h0_rh()-(h0_t0_out()*k);                      }  //Nulloffset [L$
-return (k*h_out())+n;                                             // " y = k*x + n
+double humidity(void) {	//this function will return the relative humidity witch your sensor measures
+static double k=0.0;	//humidity measurments with sense-hat are not accurate because the sense-hat gets
+static double n=0.0;	//some heat from the rasperry pi;
+if (k==0.0) {k = (h1_rh()-h0_rh()) / (h1_t0_out()-h0_t0_out());}  //slope
+if (n==0.0) {n = h0_rh()-(h0_t0_out()*k);                      }  //offset
+return (k*h_out())+n;                                             //"y = k*x + n"
+}
+
+double temp(void) {	//this function will return the temperature of your hts221 sensor
+static double k=0.0;	//temerature measurements on the sens-hat are not accurate as well
+static double n=0.0;	//in my case the error is aproxymately 3 degrees centigrate but i use
+if (k==0.0) {k = (t1_cels()-t0_cels()) / (t1_out()-t0_out());}	//an rasperry-pi-zero-w witch heats the least
+if (n==0.0) {n = t0_cels() - (t0_out()*k);                   }	//of all raspberry models
+return (k*t_out())+n;
+}
+};//-******************************************************************************
+
+//-******************************************************************************
+//this class alows you to comunicate with an air-preasure and temperature sensor on "raspberry pi sense hat"
+class lps25h { //pressure sensor on i2c bus
+private:
+i2c_master master;
+static constexpr uint8_t sad_read[2] {0xB9,0xBB};
+static constexpr uint8_t sad_write[2] {0xB8,0xBA};
+//register adress map
+static const uint8_t REF_P_XL   = 0x08;
+static const uint8_t REF_P_L    = 0x09;
+static const uint8_t REF_P_H    = 0x0A;
+static const uint8_t WHO_AM_I   = 0x0F;
+static const uint8_t RES_CONF   = 0x10;
+static const uint8_t CTRL_REG1  = 0x20;
+static const uint8_t CTRL_REG2  = 0x21;
+static const uint8_t CTRL_REG3  = 0x22;
+static const uint8_t CTRL_REG4  = 0x23;
+static const uint8_t INT_CFG    = 0x24;
+static const uint8_t INT_SOURCE = 0x25;
+static const uint8_t STATUS_REG = 0x27;
+static const uint8_t PRESS_OUT_XL       = 0x28;
+static const uint8_t PRESS_OUT_L        = 0x29;
+static const uint8_t PRESS_OUT_H        = 0x2A;
+static const uint8_t TEMP_OUT_L = 0x2B;
+static const uint8_t TEMP_OUT_H = 0x2C;
+static const uint8_t FIFO_CTRL  = 0x2E;
+static const uint8_t FIFO_STATUS        = 0x2F;
+static const uint8_t THS_P_L            = 0x30;
+static const uint8_t THS_P_H            = 0x31;
+static const uint8_t RPDS_L             = 0x39;
+static const uint8_t RPDS_H             = 0x3A;
+
+public:
+
+double pressure(void) {         //[mbar]
+uint32_t tmp = 0;
+tmp = master.read_s16_reg(PRESS_OUT_L,sad_write[0])<<8; //this works wen pressure is positive
+tmp &= 0xFFFFFF00;
+tmp |= master.read_u8_reg(PRESS_OUT_XL,sad_write[0]);
+return double(tmp/4096.0);
+}
+
+double altitude(void) {         //m above see level
+double tmp = pressure();        //using stange formula to calculate altitude
+tmp /= 1013.25;                 //from air pressure
+tmp = pow(tmp,0.190284);
+tmp = 1.0 -tmp;
+tmp *= 145366.45;
+return tmp *= rom::_M_P_FEET;
 }
 
 double temp(void) {
-static double k=0.0;
-static double n=0.0;
-if (k==0.0) {k = (t1_cels()-t0_cels()) / (t1_out()-t0_out());}
-if (n==0.0) {n = t0_cels() - (t0_out()*k);                   }
-return (k*t_out())+n;
+double tmp=0;
+tmp = double(master.read_s16_reg(TEMP_OUT_L,sad_write[0]));     //the value in Rgister is likely negative
+tmp /= 480.0;                                                   //cpp should convert it to double
+return tmp += 42.5;
 }
-}; //-******************************************************************************
 
+lps25h(uint8_t sda=8, uint8_t scl=9,double freq=100000):master(sda,scl,freq) {
+if (master.read_u8_reg(WHO_AM_I,sad_write[0]) != 0xBD)  {rom::error("There is a major problem with an preasure sensor on i2c-bus");}
+master.write_register(RES_CONF,sad_write[0],(master.read_u8_reg(RES_CONF,sad_write[0])|0x0F));// 512 internal averages for pressure 64 averages for temperature
+master.write_register(CTRL_REG1,sad_write[0],rom::ob(1,0,1,0,0,0,0,0));// 7HZ update
+master.write_register(CTRL_REG2,sad_write[0],rom::ob(0,0,0,0,0,0,0,0));// No FIFo
+std::vector<double> trash_can;
+for (uint16_t i =0;i<100;i++) { 		//put first 100 Values in trash
+        trash_can.push_back(temp());    	//That's required because this sensor delivers some wrong
+        trash_can.push_back(pressure());        //readings after startup
+        master.borrow_delayfunctor()(0.001);
+        }
+trash_can.resize(0);            //empty trashcan
+}
+};       //-******************************************************************************
 
-}	//namespace rom
-
+} //namespace rom
 
 
 void rom_wiringpin_t(void){
@@ -463,10 +534,14 @@ for (uint16_t i{0};i<10;++i) {
 	}
 std::cout << std::endl;
 std::cout << static_cast<uint16_t>(pin.read()) << std::endl;
+rom::hts221 humi{8,9,400000};
+std::cout << "Temperature of humidity ensor is: \t" << humi.temp() <<std::endl;
+std::cout << "Humidity is:                      \t" << humi.humidity() <<std::endl;
+rom::lps25h pressure{8,9,400000};
+std::cout << "Temperature of pressure sensor is:\t" << pressure.temp() <<std::endl;
+std::cout << "Pressure is:                      \t" << pressure.pressure() <<std::endl;
+std::cout << "Altitude is:                      \t" << pressure.altitude() <<std::endl;
 
-rom::hts221 humi{};
-std::cout << "Temp:     " << humi.temp() <<std::endl;
-std::cout << "Humidity: " << humi.humidity() <<std::endl;
 }
 
 #endif

@@ -521,8 +521,9 @@ trash_can.resize(0);            //empty trashcan
 } //namespace rom
 
 
+//usage example
 void rom_wiringpin_t(void){
-rom::pin pin(40);
+rom::pin pin(40);	//let an led on pin 40 (wiringpi 29) blink
 rom::autodelay delay{};
 for (uint16_t i{0};i<10;++i) {
 	std::cout << "1" <<std::endl;
@@ -534,7 +535,7 @@ for (uint16_t i{0};i<10;++i) {
 	}
 std::cout << std::endl;
 std::cout << static_cast<uint16_t>(pin.read()) << std::endl;
-rom::hts221 humi{8,9,400000};
+rom::hts221 humi{8,9,400000};	//
 std::cout << "Temperature of humidity ensor is: \t" << humi.temp() <<std::endl;
 std::cout << "Humidity is:                      \t" << humi.humidity() <<std::endl;
 rom::lps25h pressure{8,9,400000};

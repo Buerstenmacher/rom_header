@@ -448,6 +448,12 @@ std::cout<<times<< " fourier transformations of size " << size <<" took " <<(sto
 ////////////////////////////////////////////////
 
 void rom_fft_t(void){
+
+std::cout << std::endl;
+std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
+std::cout <<"Testing the fft library: "<<std::endl;
+std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
+
 //create a std::vector of floating point values
 std::vector<double> data{0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
 std::cout << std::fixed <<std::setw(6)<< std::setprecision(2);
@@ -466,12 +472,10 @@ rom::auto_fft<decltype(cmplx_data.begin())>{}.reverse(cmplx_data.begin(),cmplx_d
 std::cout <<"Recalculated original data: \t"<<std::endl<< cmplx_data<<std::endl;
 std::cout << std::endl;
 
-constexpr uint32_t n =1048576*4;
+constexpr uint32_t n =1048576/8;
 std::cout <<"Performance test of rom::auto_fft<>{}() with "<< n <<" values of std::complex<float>."<< std::endl;;
 rom::fourier_test<rom::auto_fft<std::vector<std::complex<float>>::iterator>,n,1> fut1{};
 fut1();
-
-
 }
 
 

@@ -2,10 +2,11 @@
 #define rom_wiringpin_h
 
 #include <array>
+#include "rom_spacetime.h"
 #include "rom_time.h"
 #include "rom_error.h"
-//#include "wiringPi++.h"	//use of wiringPi++;  c++ translation of wiringPi by Buerstenmacher
-#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
+#include "wiringPi++.h"	//use of wiringPi++;  c++ translation of wiringPi by Buerstenmacher
+//#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
 
 namespace rom{
 
@@ -265,21 +266,17 @@ return rdel;					//functor. This may save some time for initialisation
 //std::cout<<std::endl;
 }
 
-uint8_t slave_detect() {
-uint8_t anzahl(0);
-std::cout << "Detecting I2c Slaves: \n";
-for (uint8_t sadr=0;sadr<254;sadr+=2) {
-        send_start();
-        send_byte(uint8_t(sadr));
-        if (!sakn())	{send_stop();}	//no response on this adress
-        else    {
-                send_stop();
-                anzahl++;
-                std::cout <<uint16_t(sadr)<<" is here! \n";
-                }
-        }
-std::cout << uint16_t(anzahl)<< " slaves found on i2c-bus.\n";
-return anzahl;
+uint8_t check_slave_adress(uint8_t sadr) {
+send_start();
+send_byte(uint8_t(sadr));
+if (!sakn())	{
+	send_stop();
+	return 0;
+	}	//no response on this adress
+else    {
+	send_stop();
+	return 1;
+	}
 }
 
 uint8_t read_u8_reg(uint8_t reg,uint8_t sadr) { //read one Byte From register (reg) from slave(sadr)
@@ -416,6 +413,10 @@ public:
 //default constructor hts221 sensor on pins 8 and 9 (sda, scl) if you connect a sense hat directry to your
 //raspberry pi; i2c bus speed of 100khz is the most safe option (you can try 400 khz as well)
 hts221(uint8_t sda=8, uint8_t scl=9,double freq=100000):master(sda,scl,freq) {
+if (master.check_slave_adress(sad_write)==0){
+	rom::error("Sensor hts221 on i2c-bus with sda="+std::to_string(sda)+" and scl="+std::to_string(scl)+
+		" does not respond!");
+	}
 master.write_register(reg_CTRL_REG1,sad_write,(master.read_u8_reg(reg_CTRL_REG1,sad_write)|0x81));//Sensor einschalten und updaterate auf 1HZ einstellen
 master.write_register(reg_AV_CONF,sad_write,(master.read_u8_reg(reg_AV_CONF,sad_write) & 0xC0));//Alle Bits null setzten ausser die zwei reservierten
 master.write_register(reg_AV_CONF,sad_write,(master.read_u8_reg(reg_AV_CONF,sad_write) | 0x24));//fuer Temperatur werden 32 werte gemittelt fuer Feuchtigkeit 64 werte
@@ -504,6 +505,10 @@ return tmp += 42.5;
 }
 
 lps25h(uint8_t sda=8, uint8_t scl=9,double freq=100000):master(sda,scl,freq) {
+if (master.check_slave_adress(sad_write[0])==0){
+	rom::error("Sensor lps25h on i2c-bus with sda="+std::to_string(sda)+" and scl="+std::to_string(scl)+
+		" does not respond!");
+	}
 if (master.read_u8_reg(WHO_AM_I,sad_write[0]) != 0xBD)  {rom::error("There is a major problem with an preasure sensor on i2c-bus");}
 master.write_register(RES_CONF,sad_write[0],(master.read_u8_reg(RES_CONF,sad_write[0])|0x0F));// 512 internal averages for pressure 64 averages for temperature
 master.write_register(CTRL_REG1,sad_write[0],rom::ob(1,0,1,0,0,0,0,0));// 7HZ update
@@ -523,6 +528,13 @@ trash_can.resize(0);            //empty trashcan
 
 //usage example
 void rom_wiringpin_t(void){
+
+std::cout<<std::endl;
+std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
+std::cout <<"Testing the io library: "<<std::endl;
+std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
+
+
 rom::pin pin(40);	//let an led on pin 40 (wiringpi 29) blink
 rom::autodelay delay{};
 for (uint16_t i{0};i<10;++i) {
@@ -535,13 +547,16 @@ for (uint16_t i{0};i<10;++i) {
 	}
 std::cout << std::endl;
 std::cout << static_cast<uint16_t>(pin.read()) << std::endl;
+
+
 rom::hts221 humi{8,9,400000};	//
 std::cout << "Temperature of humidity ensor is: \t" << humi.temp() <<std::endl;
 std::cout << "Humidity is:                      \t" << humi.humidity() <<std::endl;
-rom::lps25h pressure{8,9,400000};
-std::cout << "Temperature of pressure sensor is:\t" << pressure.temp() <<std::endl;
-std::cout << "Pressure is:                      \t" << pressure.pressure() <<std::endl;
-std::cout << "Altitude is:                      \t" << pressure.altitude() <<std::endl;
+
+rom::lps25h press{8,9,400000};
+std::cout << "Temperature of pressure sensor is:\t" << press.temp() <<std::endl;
+std::cout << "Pressure is:                      \t" << press.pressure() <<std::endl;
+std::cout << "Altitude is:                      \t" << press.altitude() <<std::endl;
 
 }
 

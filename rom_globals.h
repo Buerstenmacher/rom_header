@@ -132,10 +132,10 @@ constexpr auto _uint64_t_max 	{std::numeric_limits<uint64_t>::max()};
 
 constexpr auto _streamsize_max	{std::numeric_limits <std::streamsize>::max()};
 
-template<typename fltp>		//every floating point type
+template<typename fltp>						//every floating point type
 constexpr fltp _max_acceptable_error(){
 return (std::numeric_limits<fltp>::epsilon()*256*1024); 	//i would accept a large multiple of epsilon()
-}//after a long chain of calculations, you should be able to calculate back without exceeding this error
+}	//after a long chain of calculations, you should be able to calculate back without exceeding this error
 
 inline uint8_t getbit(uint8_t bytein, uint8_t nthbit) {//get the value of the nth bit of one uint8_t
 if (nthbit>7) { return 0;}

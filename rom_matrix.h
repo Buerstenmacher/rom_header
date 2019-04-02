@@ -80,13 +80,18 @@ for (size_t r{0};r!=rows();r++) { 		//every row
 	}
 }
 
+Matrix(size_t row,size_t col,flt val=0.0):m_d{0.0},m_rows{row},m_columns{col} {//create a zero Matrix with right size
+m_d.resize(size());
+for (auto& ref:m_d) {ref=val;}
+}
+
 flt det(void) const {//calculate the determinant of matrix with Laplace's formula
 if (rows()!=columns()) {error("Sorry cannot calculate determinant of a rectangular Matrix");}
-if (rows() < 1){error("Determinant is not defined if size of matrix is smaller than 1x1");}
 flt ret{0.0};
-if (rows()==1) {ret = at(0,0);}//trivial case
+if (rows() < 1){error("Determinant is not defined if size of matrix is smaller than 1x1");}
 else if (rows()==2) {ret = at(0,0)*at(1,1)-at(0,1)*at(1,0);}//perform simple Sarrus(2x2) rule
-else 	{
+else if (rows()==1) {ret = at(0,0);}//trivial case
+else /*(rows()> 2)*/ {
 	for (size_t r{0};r!=rows();r++) {
 		flt mul{delete_row_and_column(r,0).det()};//recursion is slow but correct
 		mul *= at(r,0);
@@ -106,9 +111,24 @@ for (size_t r{0};r<rows();++r) {
 	}
 return o.str();
 }
-
-
 };//class matrix
+
+template<class flt=double>
+Matrix<flt> operator*(const Matrix<flt>& l,const Matrix<flt>& r) {//Matrix multiplikation
+if (l.columns()!=r.rows()) {::rom::error("Matrix multiplication is not defined");}
+Matrix<flt> ret(l.rows(),r.columns(),flt(0.0));
+for (size_t r_row{0};r_row<ret.rows()   ;r_row++){
+	for (size_t r_col{0};r_col<ret.columns();r_col++){
+		for (size_t item{0} ;item <r.rows()	;item++	){
+			ret.at(r_row,r_col)+=l.at(r_row,item)*r.at(item,r_col);
+			}
+		}
+	}
+return ret;
+}
+
+//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
+
 
 }//namespace rom
 
@@ -131,10 +151,21 @@ rom::Matrix<float>  a{{	{5.0,9.0,3.0,7.0,1.0,5.0, 7 , 1 },
 			{5.0,9.0,2.0,6.0,9.0,2.0, 5 , 4 },
 			{9.0,2.0,6.0,2.0,5.0,9.0, 7 , 6 }	}};
 std::cout <<"Matrix"<< std::string(a) << std::endl;
-std::cout <<"Determinant "<< a.det() << std::endl;
+auto beg = rom::mashinetime();
+std::cout <<"Determinant "<< a.det()<<" this calculation took: ";
+std::cout << rom::mashinetime()-beg <<" seconds";
+std::cout << std::endl;
+
 rom::Matrix<float>  b{{{4.0,3.0},{7.0,5.0}}};
 std::cout <<"Matrix"<< std::string(b) << std::endl << "Determinant: " << b.det();
+std::cout << std::endl;
 
+rom::Matrix<float>  l{{{1,0,3,8},{0,1,7,2}}};
+rom::Matrix<float>  r{{{3,8,36},{7,2,34},{-1,0,-4},{0,-1,-3}}};
+auto result = l*r;
+std::cout <<"Matrix"<< std::string(l) <<" * "<< std::endl;
+std::cout <<"Matrix"<< std::string(r) <<" = "<< std::endl;
+std::cout <<"Matrix"<< std::string(result) <<"  "<< std::endl;
 
 
 }

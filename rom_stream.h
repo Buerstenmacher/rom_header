@@ -24,6 +24,9 @@ return os;
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#endif	//rom_stream.h
+
+
 /*example:
 	#include "rom_stream.h"
 	int main (void) {
@@ -41,4 +44,3 @@ output should look like:
 	std::list{ }
 */
 
-#endif	//rom_stream.h

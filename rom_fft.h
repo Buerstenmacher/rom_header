@@ -16,6 +16,7 @@
 #ifndef rom_fft_h
 #define rom_fft_h
 namespace rom {
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <class it> //iterator to floating point
 auto real_to_complex(it inp_begin,it inp_end)->std::vector<std::complex<typename std::iterator_traits<it>::value_type>> {
@@ -455,13 +456,9 @@ std::cout <<"Testing the fft library: "<<std::endl;
 std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
 
 //create a std::vector of floating point values
-std::vector<double> data{0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
+std::vector<std::complex<double>> cmplx_data{0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
 std::cout << std::fixed <<std::setw(6)<< std::setprecision(2);
-std::cout <<"Input data: \t"<<std::endl<< data<<std::endl;
-
-//convert real values to complex values
-auto cmplx_data = rom::real_to_complex(data.begin(),data.end());
-std::cout <<"Complex data: \t"<<std::endl<< cmplx_data<<std::endl;
+std::cout <<"Input data: \t"<<std::endl<< cmplx_data<<std::endl;
 
 //perform fft
 rom::auto_fft<decltype(cmplx_data.begin())>{}(cmplx_data.begin(),cmplx_data.end());
@@ -477,7 +474,6 @@ std::cout <<"Performance test of rom::auto_fft<>{}() with "<< n <<" values of st
 rom::fourier_test<rom::auto_fft<std::vector<std::complex<float>>::iterator>,n,1> fut1{};
 fut1();
 }
-
 
 #endif //rom_fft_h
 

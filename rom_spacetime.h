@@ -201,7 +201,7 @@ rom::Vector<float, 4> vec8{{0.0,3.0,0.0,0.0}};
 rom::Vector<float, 4> vec9{{0.0,0.0,4.0,0.0}};
 auto result3 = rom::Vector<float,4>::crossp({vec7,vec8,vec9});
 std::cout <<"Crossproduct of: "<< std::string(vec7)<< "   " << std::endl;
-std::cout <<"Crossproduct of: "<< std::string(vec8)<< "   " << std::endl;
+std::cout <<"and              "<< std::string(vec8)<< "   " << std::endl;
 std::cout <<"and              "<< std::string(vec9)<< " = " << std::endl;
 std::cout << std::string(result3)<<std::endl;
 std::cout << rom::Vector<float,4>::alpha(vec7,result3) << " rad" << std::endl;

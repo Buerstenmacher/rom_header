@@ -8,6 +8,38 @@
 #include "wiringPi++.h"	//use of wiringPi++;  c++ translation of wiringPi by Buerstenmacher
 //#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
 
+
+/*PINBELEGUNG RASPBERRY PI 2, August 2015
+
+ +-----+-----+---------+------+---+---Pi 2---+---+------+---------+-----+-----+
+ | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |
+ +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+
+ |     |     |    3.3v |      |   |  1 || 2  |   |      | 5v      |     |     |
+ |   2 |   8 |   SDA.1 | ALT0 | 1 |  3 || 4  |   |      | 5V      |     |     |
+ |   3 |   9 |   SCL.1 | ALT0 | 1 |  5 || 6  |   |      | 0v      |     |     |
+ |   4 |   7 | GPIO. 7 |   IN | 1 |  7 || 8  | 1 | ALT0 | TxD     | 15  | 14  |
+ |     |     |      0v |      |   |  9 || 10 | 1 | ALT0 | RxD     | 16  | 15  |
+ |  17 |   0 | GPIO. 0 |  OUT | 0 | 11 || 12 | 0 | OUT  | GPIO. 1 | 1   | 18  |
+ |  27 |   2 | GPIO. 2 |   IN | 0 | 13 || 14 |   |      | 0v      |     |     |
+ |  22 |   3 | GPIO. 3 |   IN | 0 | 15 || 16 | 0 | IN   | GPIO. 4 | 4   | 23  |
+ |     |     |    3.3v |      |   | 17 || 18 | 0 | OUT  | GPIO. 5 | 5   | 24  |
+ |  10 |  12 |    MOSI | ALT0 | 0 | 19 || 20 |   |      | 0v      |     |     |
+ |   9 |  13 |    MISO | ALT0 | 0 | 21 || 22 | 0 | OUT  | GPIO. 6 | 6   | 25  |
+ |  11 |  14 |    SCLK | ALT0 | 0 | 23 || 24 | 1 | ALT0 | CE0     | 10  | 8   |
+ |     |     |      0v |      |   | 25 || 26 | 1 | ALT0 | CE1     | 11  | 7   |
+ |   0 |  30 |   SDA.0 |   IN | 1 | 27 || 28 | 1 | IN   | SCL.0   | 31  | 1   |
+ |   5 |  21 | GPIO.21 |   IN | 1 | 29 || 30 |   |      | 0v      |     |     |
+ |   6 |  22 | GPIO.22 |   IN | 1 | 31 || 32 | 0 | IN   | GPIO.26 | 26  | 12  |
+ |  13 |  23 | GPIO.23 |   IN | 0 | 33 || 34 |   |      | 0v      |     |     |
+ |  19 |  24 | GPIO.24 |   IN | 0 | 35 || 36 | 0 | IN   | GPIO.27 | 27  | 16  |
+ |  26 |  25 | GPIO.25 |   IN | 0 | 37 || 38 | 0 | IN   | GPIO.28 | 28  | 20  |
+ |     |     |      0v |      |   | 39 || 40 | 0 | IN   | GPIO.29 | 29  | 21  |
+ +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+
+ | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |
+ +-----+-----+---------+------+---+---Pi 2---+---+------+---------+-----+-----+ */
+
+
+
 namespace rom{
 
 //-******************************************************************************
@@ -231,7 +263,7 @@ scl.pulllo();                           rdel(0.5 * bittime);
 sda.flow();                             rdel(0.5 * bittime);
 }
 
-int8_t read_byte(void) {
+uint8_t read_byte(void) {
 uint8_t bits;			//storage for single bits
 uint8_t temp = 0;		//storage for return value
 for (int8_t n=7;n>=0;n--) {	//little endian on i2c bus
@@ -521,7 +553,67 @@ for (uint16_t i =0;i<100;i++) { 		//put first 100 Values in trash
         }
 trash_can.resize(0);            //empty trashcan
 }
-};       //-******************************************************************************
+};//-******************************************************************************
+
+
+//-******************************************************************************
+class max1139eee { //10 Bit A-D converter, 12 Channel, i2c bus
+private:
+i2c_master master;
+
+static constexpr uint8_t sad_write = 106;//slave adress
+//setup_byte:
+//internal Vref(2.048volt);  external clock(faster); unipolar; no reset
+static constexpr uint8_t setup_byte = rom::cob(1,1,0,1,1,0,1,0);
+uint8_t config_byte;
+static constexpr double Vref = 2.048;
+uint8_t sad_read(void) {return (sad_write | 0x01);}
+uint8_t last_channel;
+
+public:
+max1139eee(const max1139eee& in) = delete;	//no copy!
+
+//you can connect your Max1139 to an gpio, but
+//pins for sda and scl must have an pull up resistor to 3.3V
+max1139eee(uint8_t sda=24, uint8_t scl=25,double freq=1000000):
+	master(sda,scl,freq),config_byte{rom::ob(0,1,1,0,0,0,0,1)},last_channel{255}  {
+//config_byte:
+//bit 7 0==config byte
+//bit 5 and 6:convert only selected channel
+//bit 1-4 Cannel
+//bit 0 1==single ended
+master.send_start();
+master.send_byte(sad_write);
+if (!master.sakn())    {rom::error("i2c slave with adress "+std::to_string(sad_write)+
+					" does not reply.");}
+master.send_byte(setup_byte);
+if (!master.sakn())    {rom::error("No reply to i2c write command to ad converter!");}
+master.send_stop();
+}
+
+double read(uint8_t channel) {
+if (channel != last_channel) {
+        last_channel = channel;
+        channel = (channel & 0x0F) << 1;  //take only 4 bits
+        config_byte = rom::ob(0,1,1,0,0,0,0,1) | (channel);
+        master.send_start();
+        master.send_byte(sad_write);
+        if (!master.sakn())    {rom::error("error on max1139-i2c bus");}
+        master.send_byte(config_byte);
+        if (!master.sakn())    {rom::error("error on max1139-i2c bus");}
+        master.send_stop();
+        }
+master.send_start();
+master.send_byte(sad_read());
+if (!master.sakn())    {rom::error("error on max1139-i2c bus");}
+uint8_t high{master.read_byte()};
+master.send_mak();
+uint8_t low{master.read_byte()};
+master.send_stop();
+uint16_t result =  ((uint16_t(0x03 & high) << 8) | low);
+return  (Vref * result / 1024.0);
+}
+}; //-******************************************************************************
 
 } //namespace rom
 
@@ -537,17 +629,6 @@ std::cout <<"///////////////////////////////////////////////////////////////////
 
 rom::pin pin(40);	//let an led on pin 40 (wiringpi 29) blink
 rom::autodelay delay{};
-for (uint16_t i{0};i<10;++i) {
-	std::cout << "1" <<std::endl;
-	pin.write(1);
-	delay(0.05) ;
-	std::cout << "0" <<std::endl;
-	pin.write(0);
-	delay(0.05) ;
-	}
-std::cout << std::endl;
-std::cout << static_cast<uint16_t>(pin.read()) << std::endl;
-
 
 rom::hts221 humi{8,9,400000};	//
 std::cout << "Temperature of humidity ensor is: \t" << humi.temp() <<std::endl;
@@ -557,6 +638,10 @@ rom::lps25h press{8,9,400000};
 std::cout << "Temperature of pressure sensor is:\t" << press.temp() <<std::endl;
 std::cout << "Pressure is:                      \t" << press.pressure() <<std::endl;
 std::cout << "Altitude is:                      \t" << press.altitude() <<std::endl;
+
+rom::max1139eee ad{24,25,400000};
+for (uint8_t i{0};i<3;++i){
+	std::cout << "Voltage is:                       \t" << ad.read(0) << std::endl;}
 
 }
 

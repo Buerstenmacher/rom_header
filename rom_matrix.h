@@ -8,10 +8,17 @@ namespace rom {
 //Helper Functions:
 int8_t parity_of_permutation(size_t inp) {return (inp%2)?-1:1;}
 
+//test if an 2d vector is square
+template<class blt> //should work for every built in type
+uint8_t is_square(const std::vector<std::vector<blt>>& in) {
+for (auto& elem:in) {if (elem.size()!=in.size()) {return 0;}}
+return 1;
+}
+
 //test if an 2d vector is rectangular
 template<class blt> //should work for every built in type
 uint8_t is_rectangular(const std::vector<std::vector<blt>>& in) {
-for (auto& elem:in) {if (elem.size()!=in.size()) {return 0;}}
+for (auto& elem:in) {if (elem.size()!=in.back().size()) {return 0;}}
 return 1;
 }
 
@@ -19,7 +26,8 @@ template<class blt> //should work for every built in type
 //this should create a vector of columns if input is a vector of rows and vise-versa
 std::vector<std::vector<blt>> row_column_mirror(const std::vector<std::vector<blt>>& in) {
 if (is_rectangular(in)==0) {rom::error("expected an rectangular 2d vector");}
-auto ret{in}; //copy of input
+std::vector<blt> one_row(in.size(),blt{0});
+std::vector<std::vector<blt>> ret(in.back().size(),one_row); //size should be mirror of in
 for (size_t a{0};a!=in.size();++a) {
 	for (size_t b{0};b!=in.at(a).size();++b) {
 		ret.at(b).at(a)=in.at(a).at(b); //mirror every value
@@ -32,7 +40,6 @@ return ret;
 //class Matrix should represent an two dimensional matrix
 template<class flt=double>
 class Matrix{
-
 private:
 std::vector<flt> m_d;  //the two dimensions should be flatened to an one dimensional std::vector
 size_t m_rows;
@@ -54,6 +61,8 @@ for (size_t row{0}; row!=rows();row++) {
         }
 return Matrix(ret);//convert 2d vector to Matrix-Object
 }
+
+Matrix(const Matrix& in) = default;
 
 flt& at(size_t row_in,size_t column_in) {	//member access
 return m_d.at(row_in*m_columns + column_in);	//in informatics indices begin at 0!!
@@ -111,10 +120,22 @@ for (size_t r{0};r<rows();++r) {
 	}
 return o.str();
 }
+
+Matrix transpose(void) {
+std::vector<std::vector<flt>> row_v;
+for (size_t r{0};r<rows();++r){  //recreate a 2d vector of rows
+	row_v.push_back(std::vector<flt>());
+	for (size_t c{0};c<columns();++c){
+		row_v.back().push_back(at(r,c));
+		}
+	}
+return Matrix<flt>(row_column_mirror(row_v));
+}
+
 };//class matrix
 
 template<class flt=double>
-Matrix<flt> operator*(const Matrix<flt>& l,const Matrix<flt>& r) {//Matrix multiplikation
+Matrix<flt> operator*(const Matrix<flt>& l,const Matrix<flt>& r) {//Matrix multiplication
 if (l.columns()!=r.rows()) {::rom::error("Matrix multiplication is not defined");}
 Matrix<flt> ret(l.rows(),r.columns(),flt(0.0));
 for (size_t r_row{0};r_row<ret.rows()   ;r_row++){
@@ -153,20 +174,36 @@ rom::Matrix<float>  a{{	{5.0,9.0,3.0,7.0,1.0,5.0, 7 , 1 },
 std::cout <<"Matrix"<< std::string(a) << std::endl;
 auto beg = rom::mashinetime();
 std::cout <<"Determinant "<< a.det()<<" this calculation took: ";
-std::cout << rom::mashinetime()-beg <<" seconds";
-std::cout << std::endl;
+std::cout << rom::mashinetime()-beg <<" seconds"<<std::endl;
+std::cout <<"Determinant of transpose of transpose is "<< a.transpose().transpose().det()<<  std::endl;
 
-rom::Matrix<float>  b{{{4.0,3.0},{7.0,5.0}}};
+rom::Matrix<float>  b{{	{4.0,3.0},
+			{7.0,5.0}	}};
 std::cout <<"Matrix"<< std::string(b) << std::endl << "Determinant: " << b.det();
 std::cout << std::endl;
 
-rom::Matrix<float>  l{{{1,0,3,8},{0,1,7,2}}};
-rom::Matrix<float>  r{{{3,8,36},{7,2,34},{-1,0,-4},{0,-1,-3}}};
+rom::Matrix<float>  l{{	{1,0,3,8},
+			{0,1,7,2}	}};
+rom::Matrix<float>  r{{	{ 3, 8,36},
+			{ 7, 2,34},
+			{-1, 0,-4},
+			{ 0,-1,-3}	}};
 auto result = l*r;
 std::cout <<"Matrix"<< std::string(l) <<" * "<< std::endl;
 std::cout <<"Matrix"<< std::string(r) <<" = "<< std::endl;
 std::cout <<"Matrix"<< std::string(result) <<"  "<< std::endl;
 
+rom::Matrix<float>  l1{{	{2, 4,-3, 1},
+				{3,-1, 2, 7}	}};
+rom::Matrix<float>  r1{{	{10, 1, 11},
+				{ 3, 7, 10},
+				{-2, 6, 4},
+				{ 8, 2, 10}	}};
+auto result1 = l1*r1;
+std::cout <<"Matrix"<< std::string(l1) <<" * "<< std::endl;
+std::cout <<"Matrix"<< std::string(r1) <<" = "<< std::endl;
+std::cout <<"Matrix"<< std::string(result1) <<"  "<< std::endl;
+std::cout <<"It's transpose is: "<< std::string(result1.transpose()) <<"  "<< std::endl;
 
 }
 

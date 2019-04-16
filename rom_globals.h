@@ -137,6 +137,15 @@ constexpr fltp _max_acceptable_error(){
 return (std::numeric_limits<fltp>::epsilon()*256*1024); 	//i would accept a large multiple of epsilon()
 }	//after a long chain of calculations, you should be able to calculate back without exceeding this error
 
+
+template <class flt>
+uint8_t _almost_equal(flt a,flt b)  {
+flt largest = (std::abs(a)>std::abs(b))?(a):(b);     //variables for equality; but if you need it here is the
+flt abs_dif = std::abs(a-b);
+flt max_error = std::abs(largest) * _max_acceptable_error<flt>();
+return (max_error > abs_dif)?1:0;
+}
+
 inline uint8_t getbit(uint8_t bytein, uint8_t nthbit) {//get the value of the nth bit of one uint8_t
 if (nthbit>7) { return 0;}
 static uint8_t mask;

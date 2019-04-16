@@ -1,5 +1,4 @@
-//recommendet usage:
-//you should be on an raspberry pi running the latest version of raspbian
+//recommendet usage: //you should be on an raspberry pi running the latest version of raspbian
 
 //you should directly connect your raspberry pi to a "Sense Hat"
 
@@ -30,7 +29,7 @@
 int main (void) {
 rom_fft_t();
 rom_wiringpin_t();
-//rom_matrix_t();
+rom_matrix_t();
 rom_spacetime_t();
 
 

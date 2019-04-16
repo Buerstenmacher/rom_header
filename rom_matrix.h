@@ -78,15 +78,27 @@ size_t size(void) 	const {return m_columns * m_rows;}
 
 Matrix(void):m_d{0.0},m_rows{1},m_columns{1}  {}  	//default size is one, value is 0.0
 
-Matrix(const std::vector<std::vector<flt>>& inp):Matrix{} {//construction from 2 dimensional vector
-m_rows = inp.size();					//input has to be a vector of rows
-m_columns = inp.at(0).size();//ToDo: check if every row has the same number of columns
+Matrix(const std::vector<std::vector<flt>>& inp):Matrix{} {//construction from 2 dimensional vector of rows
+if (is_rectangular(inp)==0) {rom::error("trying to construct a matrix from not rectangular input");}
+m_rows = inp.size();		//input has to be a vector of rows
+m_columns = inp.at(0).size();
 m_d.resize(size());
 for (size_t r{0};r!=rows();r++) { 		//every row
-	for (size_t c{0};columns()!=c;c++) { 	//value in column
+	for (size_t c{0};columns()!=c;c++) { 	//every column
 		this->at(r,c)=inp.at(r).at(c);
 		}
 	}
+}
+
+operator std::vector<std::vector<flt>>() const  {
+std::vector<std::vector<flt>> row_v;
+for (size_t r{0};r<rows();++r){  //recreate a 2d vector of rows
+	row_v.push_back(std::vector<flt>());
+	for (size_t c{0};c<columns();++c){
+		row_v.back().push_back(at(r,c));
+		}
+	}
+return row_v;
 }
 
 Matrix(size_t row,size_t col,flt val=0.0):m_d{0.0},m_rows{row},m_columns{col} {//create a zero Matrix with right size
@@ -111,7 +123,7 @@ else /*(rows()> 2)*/ {
 return ret;
 }
 
-operator std::string() const {//make it easy to output internal data of vector class
+operator std::string() const {//make it easy to output internal data of Matrix class
 std::ostringstream o;
 for (size_t r{0};r<rows();++r) {
 	o << std::endl << "{";
@@ -121,18 +133,21 @@ for (size_t r{0};r<rows();++r) {
 return o.str();
 }
 
-Matrix transpose(void) {
-std::vector<std::vector<flt>> row_v;
-for (size_t r{0};r<rows();++r){  //recreate a 2d vector of rows
-	row_v.push_back(std::vector<flt>());
-	for (size_t c{0};c<columns();++c){
-		row_v.back().push_back(at(r,c));
-		}
+uint8_t operator == (const Matrix& r) const {
+if ((*this).size()!=r.size())	{return 0;}
+for (size_t i{0};i<r.size();++i) {
+	if (rom::_almost_equal(r.m_d.at(i),this->m_d.at(i)) == 0)   {return 0;}
 	}
-return Matrix<flt>(row_column_mirror(row_v));
+return 1;
+}
+
+Matrix transpose(void) const{
+std::vector<std::vector<flt>> row_vec(*this);
+return Matrix<flt>(row_column_mirror(row_vec));
 }
 
 };//class matrix
+
 
 template<class flt=double>
 Matrix<flt> operator*(const Matrix<flt>& l,const Matrix<flt>& r) {//Matrix multiplication
@@ -148,7 +163,8 @@ for (size_t r_row{0};r_row<ret.rows()   ;r_row++){
 return ret;
 }
 
-//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 
 
 }//namespace rom
@@ -172,10 +188,8 @@ rom::Matrix<float>  a{{	{5.0,9.0,3.0,7.0,1.0,5.0, 7 , 1 },
 			{5.0,9.0,2.0,6.0,9.0,2.0, 5 , 4 },
 			{9.0,2.0,6.0,2.0,5.0,9.0, 7 , 6 }	}};
 std::cout <<"Matrix"<< std::string(a) << std::endl;
-auto beg = rom::mashinetime();
-std::cout <<"Determinant "<< a.det()<<" this calculation took: ";
-std::cout << rom::mashinetime()-beg <<" seconds"<<std::endl;
-std::cout <<"Determinant of transpose of transpose is "<< a.transpose().transpose().det()<<  std::endl;
+std::cout <<"Determinant "<< a.det() <<std::endl;
+std::cout <<"Determinant of transpose is "<< a.transpose().det()<<  std::endl;
 
 rom::Matrix<float>  b{{	{4.0,3.0},
 			{7.0,5.0}	}};
@@ -204,6 +218,9 @@ std::cout <<"Matrix"<< std::string(l1) <<" * "<< std::endl;
 std::cout <<"Matrix"<< std::string(r1) <<" = "<< std::endl;
 std::cout <<"Matrix"<< std::string(result1) <<"  "<< std::endl;
 std::cout <<"It's transpose is: "<< std::string(result1.transpose()) <<"  "<< std::endl;
+std::cout <<"It's transpose is: "<< std::string(result1.transpose()) <<"  "<< std::endl;
+std::cout << uint16_t(l1==r1) <<"\t" << uint16_t(l1==l1.transpose().transpose()) << std::endl;
+
 
 }
 

@@ -2,6 +2,7 @@
 #define rom_matrix
 
 #include "rom_error.h"
+#include "rom_stream.h"
 
 namespace rom {
 
@@ -148,6 +149,11 @@ return Matrix<flt>(row_column_mirror(row_vec));
 
 };//class matrix
 
+template<class flt=double>
+std::ostream& operator << (std::ostream& os, const Matrix<flt>& v) {
+os << std::string(v);
+return os;
+}
 
 template<class flt=double>
 Matrix<flt> operator*(const Matrix<flt>& l,const Matrix<flt>& r) {//Matrix multiplication
@@ -178,7 +184,7 @@ std::cout <<"Testing the matrix library: "<<std::endl;
 std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
 
 
-std::cout <<"Default Matrix"<< std::string(rom::Matrix<float>{}) << std::endl;
+std::cout <<"Default Matrix"<< rom::Matrix<float>{} << std::endl;
 rom::Matrix<float>  a{{	{5.0,9.0,3.0,7.0,1.0,5.0, 7 , 1 },
 			{6.0,9.0,3.0,7.0,0.0,5.0, 0 , 3 },
 			{1.0,4.0,8.0,1.0,4.0,7.0, 4 , 6 },
@@ -187,13 +193,13 @@ rom::Matrix<float>  a{{	{5.0,9.0,3.0,7.0,1.0,5.0, 7 , 1 },
 			{1.0,4.0,8.0,2.0,5.0,9.0, 2 , 3 },
 			{5.0,9.0,2.0,6.0,9.0,2.0, 5 , 4 },
 			{9.0,2.0,6.0,2.0,5.0,9.0, 7 , 6 }	}};
-std::cout <<"Matrix"<< std::string(a) << std::endl;
+std::cout <<"Matrix"<< a << std::endl;
 std::cout <<"Determinant "<< a.det() <<std::endl;
 std::cout <<"Determinant of transpose is "<< a.transpose().det()<<  std::endl;
 
 rom::Matrix<float>  b{{	{4.0,3.0},
 			{7.0,5.0}	}};
-std::cout <<"Matrix"<< std::string(b) << std::endl << "Determinant: " << b.det();
+std::cout <<"Matrix"<< b << std::endl << "Determinant: " << b.det();
 std::cout << std::endl;
 
 rom::Matrix<float>  l{{	{1,0,3,8},
@@ -203,9 +209,9 @@ rom::Matrix<float>  r{{	{ 3, 8,36},
 			{-1, 0,-4},
 			{ 0,-1,-3}	}};
 auto result = l*r;
-std::cout <<"Matrix"<< std::string(l) <<" * "<< std::endl;
-std::cout <<"Matrix"<< std::string(r) <<" = "<< std::endl;
-std::cout <<"Matrix"<< std::string(result) <<"  "<< std::endl;
+std::cout <<"Matrix"<< l <<" * "<< std::endl;
+std::cout <<"Matrix"<< r <<" = "<< std::endl;
+std::cout <<"Matrix"<< result <<"  "<< std::endl;
 
 rom::Matrix<float>  l1{{	{2, 4,-3, 1},
 				{3,-1, 2, 7}	}};
@@ -214,12 +220,10 @@ rom::Matrix<float>  r1{{	{10, 1, 11},
 				{-2, 6, 4},
 				{ 8, 2, 10}	}};
 auto result1 = l1*r1;
-std::cout <<"Matrix"<< std::string(l1) <<" * "<< std::endl;
-std::cout <<"Matrix"<< std::string(r1) <<" = "<< std::endl;
-std::cout <<"Matrix"<< std::string(result1) <<"  "<< std::endl;
-std::cout <<"It's transpose is: "<< std::string(result1.transpose()) <<"  "<< std::endl;
-std::cout <<"It's transpose is: "<< std::string(result1.transpose()) <<"  "<< std::endl;
-std::cout << uint16_t(l1==r1) <<"\t" << uint16_t(l1==l1.transpose().transpose()) << std::endl;
+std::cout <<"Matrix"<< l1 <<" * "<< std::endl;
+std::cout <<"Matrix"<< r1 <<" = "<< std::endl;
+std::cout <<"Matrix"<< result1 <<"  "<< std::endl;
+std::cout <<"It's transpose is: "<< result1.transpose() <<"  "<< std::endl;
 
 
 }

@@ -5,8 +5,8 @@
 #include "rom_spacetime.h"
 #include "rom_time.h"
 #include "rom_error.h"
-#include "wiringPi++.h"	//use of wiringPi++;  c++ translation of wiringPi by Buerstenmacher
-//#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
+//#include "wiringPi++.h"	//use of wiringPi++;  c++ translation of wiringPi by Buerstenmacher
+#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
 
 
 /*PINBELEGUNG RASPBERRY PI 2, August 2015
@@ -37,8 +37,6 @@
  +-----+-----+---------+------+---+----++----+---+------+---------+-----+-----+
  | BCM | wPi |   Name  | Mode | V | Physical | V | Mode | Name    | wPi | BCM |
  +-----+-----+---------+------+---+---Pi 2---+---+------+---------+-----+-----+ */
-
-
 
 namespace rom{
 
@@ -169,7 +167,7 @@ uint64_t writecnt;      // byte counter
 const double bittime;   // (1.0/freqency)
 rom::autodelay rdel;	//delayclass for short delays down to fractions of microseconds
 
-static int16_t reinterpret_s16(uint16_t u16)    {return int16_t(*reinterpret_cast<int16_t*>(&u16));}
+static int16_t reinterpret_s16(uint16_t u16) {return int16_t(*reinterpret_cast<int16_t*>(&u16));}
 
 inline uint8_t flow_and_wait(rom::wiringpin& pinin,double dt_sec=0.2) {
 pinin.flow();					//release gpio and wait for i2c pullup resistor to pull line HIGH
@@ -279,6 +277,9 @@ return temp;
 public:
 void send_byte(uint8_t by)      {for (int8_t n=7;n >=0; n--)    {send_bit(rom::getbit(by,n));}}
 
+i2c_master(const i2c_master& in) = delete;		//no copy!
+i2c_master operator=(const i2c_master& in) = delete; 	//no copy!
+
 i2c_master(uint8_t sdi=8,uint8_t sci=9,double freqin=100000):   sda(sdi),scl(sci),readcnt(0),
                                                                 writecnt(0),bittime(1.0/freqin),rdel{}
 {
@@ -288,10 +289,9 @@ sda.flow();	//obsolete
 scl.flow();	//obsolete
 }
 
-rom::autodelay& borrow_delayfunctor(void) {	//classes that include an i2c master can get access to it's delay
+rom::autodelay& borrow_delayfunctor(void) {	//objects that include an i2c master can get access to it's delay
 return rdel;					//functor. This may save some time for initialisation
 }
-
 
 ~i2c_master() {//destructor with or without message
 //std::cout<<"An I2c-bus-Master get's destroyed wich transmitted " <<readcnt+writecnt<< " Bytes.";
@@ -387,7 +387,7 @@ writecnt++;
 //this class alows you to comunicate with an humidity ad temperature sensor on "raspberry pi sense hat"
 class hts221 {//-***Capacitive digital sensor for relative humidity and temperat$
 private:
-i2c_master master;
+i2c_master& master;
 //Table 15. Register address map
 //Name          Type            Register address (hex)  Default (hex)
 static const uint8_t reg_WHO_AM_I =     0x0F;           //BC
@@ -442,12 +442,13 @@ int16_t t0_out(void)    {return master.read_s16_reg(T0_OUT,sad_write);}
 int16_t t1_out(void)    {return master.read_s16_reg(T1_OUT,sad_write);}
 
 public:
-//default constructor hts221 sensor on pins 8 and 9 (sda, scl) if you connect a sense hat directry to your
+hts221(const hts221& in) = delete;		//no copy!
+hts221 operator=(const hts221& in) = delete; 	//no copy!
+
 //raspberry pi; i2c bus speed of 100khz is the most safe option (you can try 400 khz as well)
-hts221(uint8_t sda=8, uint8_t scl=9,double freq=100000):master(sda,scl,freq) {
+hts221(i2c_master& in):master(in) {
 if (master.check_slave_adress(sad_write)==0){
-	rom::error("Sensor hts221 on i2c-bus with sda="+std::to_string(sda)+" and scl="+std::to_string(scl)+
-		" does not respond!");
+	rom::error("Sensor hts221 on i2c-bus does nnot respond!");
 	}
 master.write_register(reg_CTRL_REG1,sad_write,(master.read_u8_reg(reg_CTRL_REG1,sad_write)|0x81));//Sensor einschalten und updaterate auf 1HZ einstellen
 master.write_register(reg_AV_CONF,sad_write,(master.read_u8_reg(reg_AV_CONF,sad_write) & 0xC0));//Alle Bits null setzten ausser die zwei reservierten
@@ -482,7 +483,7 @@ return (k*t_out())+n;
 //this class alows you to comunicate with an air-preasure and temperature sensor on "raspberry pi sense hat"
 class lps25h { //pressure sensor on i2c bus
 private:
-i2c_master master;
+i2c_master& master;
 static constexpr uint8_t sad_read[2] {0xB9,0xBB};
 static constexpr uint8_t sad_write[2] {0xB8,0xBA};
 //register adress map
@@ -535,12 +536,11 @@ tmp = double(master.read_s16_reg(TEMP_OUT_L,sad_write[0]));     //the value in R
 tmp /= 480.0;                                                   //cpp should convert it to double
 return tmp += 42.5;
 }
+lps25h(const lps25h& in) = delete;		//no copy!
+lps25h operator=(const lps25h& in) = delete; 	//no copy!
 
-lps25h(uint8_t sda=8, uint8_t scl=9,double freq=100000):master(sda,scl,freq) {
-if (master.check_slave_adress(sad_write[0])==0){
-	rom::error("Sensor lps25h on i2c-bus with sda="+std::to_string(sda)+" and scl="+std::to_string(scl)+
-		" does not respond!");
-	}
+lps25h(i2c_master& ma_in):master(ma_in) {
+if (master.check_slave_adress(sad_write[0])==0)	{rom::error("Sensor lps25h on i2c-bus does not respond!");}
 if (master.read_u8_reg(WHO_AM_I,sad_write[0]) != 0xBD)  {rom::error("There is a major problem with an preasure sensor on i2c-bus");}
 master.write_register(RES_CONF,sad_write[0],(master.read_u8_reg(RES_CONF,sad_write[0])|0x0F));// 512 internal averages for pressure 64 averages for temperature
 master.write_register(CTRL_REG1,sad_write[0],rom::ob(1,0,1,0,0,0,0,0));// 7HZ update
@@ -559,7 +559,7 @@ trash_can.resize(0);            //empty trashcan
 //-******************************************************************************
 class max1139eee { //10 Bit A-D converter, 12 Channel, i2c bus
 private:
-i2c_master master;
+i2c_master& master;
 
 static constexpr uint8_t sad_write = 106;//slave adress
 //setup_byte:
@@ -572,11 +572,11 @@ uint8_t last_channel;
 
 public:
 max1139eee(const max1139eee& in) = delete;	//no copy!
+max1139eee operator=(const max1139eee& in) = delete; 	//no copy!
 
 //you can connect your Max1139 to an gpio, but
 //pins for sda and scl must have an pull up resistor to 3.3V
-max1139eee(uint8_t sda=24, uint8_t scl=25,double freq=1000000):
-	master(sda,scl,freq),config_byte{rom::ob(0,1,1,0,0,0,0,1)},last_channel{255}  {
+max1139eee(i2c_master& mi):master(mi),config_byte{rom::ob(0,1,1,0,0,0,0,1)},last_channel{255}  {
 //config_byte:
 //bit 7 0==config byte
 //bit 5 and 6:convert only selected channel
@@ -615,33 +615,85 @@ return  (Vref * result / 1024.0);
 }
 }; //-******************************************************************************
 
-} //namespace rom
+//-******************************************************************************
+class mcp4728 {    //12 bit D-A converter, 4channel, i2c bus, 5mA max outp-Current
+private:
+i2c_master& master;
+static constexpr uint8_t sad_write = rom::cob(1,1,0,0,0,0,0,0);
+uint8_t sad_read(void) {return (sad_write | rom::cob(0,0,0,0,0,0,0,1));}//adress is programmable, see Datasheet
+static constexpr uint8_t single_write = rom::cob(0,1,0,1,1,0,0,0);//command for single output write
+static constexpr uint8_t udac = rom::cob(0,0,0,0,0,0,0,0);//udac bit is zero for spontaneous update
+static constexpr uint8_t vref = rom::cob(1,0,0,0,0,0,0,0);//internal reference 2.048V
+static constexpr uint8_t pd = rom::cob(0,0,0,0,0,0,0,0);//power dow selection "normal"
+static constexpr uint8_t gx = rom::cob(0,0,0,0,0,0,0,0);//gain selection "1x"
+static constexpr double Vref = 2.048;                   //internal reference voltage
+static constexpr double values = 4096;                  //12 bit d-a converter
 
+void write_int(uint16_t val, uint8_t chan){     //chan: 0=A; 1=B; 2=C; 3=D;
+chan &= rom::ob(0,0,0,0,0,0,1,1);               //mask 2 bits for 4 channels
+chan <<= 1;                                     //smallest bit should be reserved for udac
+uint8_t command_2nd{uint8_t(single_write | chan | udac)};//put second byte together
+uint8_t valh=((val & 0x0f00)>>8);               //4 bit //split input value into high and low byte
+uint8_t vall=(val & 0x00ff);                    //8 bit //split input value into high and low byte
+uint8_t command_3rd{uint8_t(vref | pd | gx | valh)};    //put 3rd byte together 
+master.send_start();
+master.send_byte(sad_write);    //first byte is slave adress
+if (!master.sakn())    {rom::error("error on mcp4728-i2c bus");}
+master.send_byte(command_2nd);
+if (!master.sakn())    {rom::error("error on mcp4728-i2c bus");}
+master.send_byte(command_3rd);
+if (!master.sakn())    {rom::error("error on mcp4728-i2c bus");}
+master.send_byte(vall);         //4th byte is lower 8 bits of value
+if (!master.sakn())    {rom::error("error on mcp4728-i2c bus");}
+master.send_stop();     //rom_sheepdelay(16.0*master.bittime);
+}
+
+
+public:
+mcp4728(const mcp4728& in) = delete;
+mcp4728 operator=(const mcp4728& in) = delete; 	//no copy!
+
+mcp4728(i2c_master& mi):master(mi) {}
+
+void write(float voltage,uint8_t chan) {
+int32_t v_int = voltage*values/Vref;
+v_int = (v_int<0)?0:v_int;              //no input voltage is allowed to be smaller than 0
+v_int = (v_int>=4096)?4095:v_int;       //no input voltage is allowed to be larger than 4095
+write_int(v_int,chan);
+}
+
+void write_all(float vltg) {for (uint8_t i{0};i<4;i++) {write(vltg,i);}}
+};//-******************************************************************************
+
+} //namespace rom
 
 //usage example
 void rom_wiringpin_t(void){
 
 std::cout<<std::endl;
 std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
-std::cout <<"Testing the io library: "<<std::endl;
+std::cout <<"Testing the io library: "<< std::endl;
 std::cout <<"//////////////////////////////////////////////////////////////////////////////////"<<std::endl;
 
+rom::i2c_master sense_m(8,9,100000);	//create an i2c-master for comunication with sense hat
+rom::i2c_master custom_m(24,25,400000);	//create an i2c_master for comuntication with other devices
+				//on custom i2c bus
 
-rom::pin pin(40);	//let an led on pin 40 (wiringpi 29) blink
-rom::autodelay delay{};
-
-rom::hts221 humi{8,9,400000};	//
+rom::hts221 humi{sense_m};	//
 std::cout << "Temperature of humidity ensor is: \t" << humi.temp() <<std::endl;
 std::cout << "Humidity is:                      \t" << humi.humidity() <<std::endl;
 
-rom::lps25h press{8,9,400000};
+rom::lps25h press{sense_m};
 std::cout << "Temperature of pressure sensor is:\t" << press.temp() <<std::endl;
 std::cout << "Pressure is:                      \t" << press.pressure() <<std::endl;
 std::cout << "Altitude is:                      \t" << press.altitude() <<std::endl;
 
-rom::max1139eee ad{24,25,400000};
+rom::max1139eee ad{custom_m};
+rom::mcp4728 	da{custom_m};
 for (uint8_t i{0};i<3;++i){
-	std::cout << "Voltage is:                       \t" << ad.read(0) << std::endl;}
+	std::cout << "Voltage is:                       \t" << ad.read(0) << std::endl;
+	}
+da.write_all(1.8);
 
 }
 

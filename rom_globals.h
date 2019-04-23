@@ -132,11 +132,10 @@ constexpr auto _uint64_t_max 	{std::numeric_limits<uint64_t>::max()};
 
 constexpr auto _streamsize_max	{std::numeric_limits <std::streamsize>::max()};
 
-template<typename fltp>						//every floating point type
-constexpr fltp _max_acceptable_error(){
-return (std::numeric_limits<fltp>::epsilon()*256*1024); 	//i would accept a large multiple of epsilon()
-}	//after a long chain of calculations, you should be able to calculate back without exceeding this error
-
+template<typename fltp>			//every floating point type
+constexpr fltp _max_acceptable_error(){	//i would accept a large multiple of epsilon()
+return (std::numeric_limits<fltp>::epsilon()*256*1024);
+}//after a long chain of calculations, you should be able to calculate back without exceeding this error
 
 template <class flt>
 uint8_t _almost_equal(flt a,flt b)  {

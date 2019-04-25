@@ -142,6 +142,11 @@ for (size_t i{0};i<r.size();++i) {
 return 1;
 }
 
+uint8_t is_symmetric(void) const {
+auto t = (*this).transpose();
+return (t==(*this))1:0;	//if the matrix is like its transpose it is symmetric
+}
+
 Matrix transpose(void) const{
 std::vector<std::vector<flt>> row_vec(*this);
 return Matrix<flt>(row_column_mirror(row_vec));
@@ -195,7 +200,7 @@ rom::Matrix<float>  a{{	{5.0,9.0,3.0,7.0,1.0,5.0, 7 , 1 },
 			{9.0,2.0,6.0,2.0,5.0,9.0, 7 , 6 }	}};
 std::cout <<"Matrix"<< a << std::endl;
 std::cout <<"Determinant "<< a.det() <<std::endl;
-std::cout <<"Determinant of transpose is "<< a.transpose().det()<<  std::endl;
+std::cout <<"Determinant of the transpose is "<< a.transpose().det()<<  std::endl;
 
 rom::Matrix<float>  b{{	{4.0,3.0},
 			{7.0,5.0}	}};
@@ -212,18 +217,6 @@ auto result = l*r;
 std::cout <<"Matrix"<< l <<" * "<< std::endl;
 std::cout <<"Matrix"<< r <<" = "<< std::endl;
 std::cout <<"Matrix"<< result <<"  "<< std::endl;
-
-rom::Matrix<float>  l1{{	{2, 4,-3, 1},
-				{3,-1, 2, 7}	}};
-rom::Matrix<float>  r1{{	{10, 1, 11},
-				{ 3, 7, 10},
-				{-2, 6, 4},
-				{ 8, 2, 10}	}};
-auto result1 = l1*r1;
-std::cout <<"Matrix"<< l1 <<" * "<< std::endl;
-std::cout <<"Matrix"<< r1 <<" = "<< std::endl;
-std::cout <<"Matrix"<< result1 <<"  "<< std::endl;
-std::cout <<"It's transpose is: "<< result1.transpose() <<"  "<< std::endl;
 
 
 }

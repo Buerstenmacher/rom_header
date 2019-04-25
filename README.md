@@ -30,9 +30,16 @@ rom_header:	Collection of C++11 Tools
 	//description is in the file itself 
 
 	File
-	rom_wiringpin.h:	wrapper for wiringPi library
+	rom_wiringpin.h: code for analog input and output; interface for Sense-Hat
 	//it depends on installed wiringPi and being on an raspberry-Pi computer
 
+	File
+	rom_matrix.h:	code for linear algebra/matrix calculation
+	//see example at the bottom of file
+
+	File
+	rom_vector.h	code for vector-calculus in euclidean space 
+	//see example at the bottom of file
 
 	
 

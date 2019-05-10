@@ -23,7 +23,7 @@
 //run it by typing command ./example
 
 #include "rom_fft.h"
-#include "rom_wiringpin.h"
+//#include "rom_wiringpin.h"
 #include "rom_matrix.h"
 
 int main (void) {

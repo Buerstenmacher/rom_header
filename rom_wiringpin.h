@@ -8,7 +8,6 @@
 #include "wiringPi++.h"		//use of wiringPi++;  c++ translation of wiringPi by Buerstenmacher
 //#include "wiringPi.h"		//use of wiringPi from Gordon Henderson
 
-
 /*PINBELEGUNG RASPBERRY PI 2, August 2015
 
  +-----+-----+---------+------+---+---Pi 2---+---+------+---------+-----+-----+

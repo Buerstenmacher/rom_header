@@ -70,8 +70,6 @@ for (size_t r{0};r<ret.rows();++r) {  	//recreate a 2d vector of rows
 return ret;
 }
 
-Matrix adjoint(void) const {return this->cofactors().transpose();}
-
 Matrix delete_row(size_t r) const {	//create a new Matrix without row number r
 std::vector<std::vector<flt>> ret {};
 for (size_t row{0}; row!=rows();row++) {if (row!=r) {ret.push_back(this->row(row));}}
@@ -84,11 +82,11 @@ ret = ret.delete_row(c);
 return ret.transpose();
 }
 
+public:
 Matrix delete_row_and_column(size_t r,size_t c) const{
 return this->delete_column(c).delete_row(r);
 }
 
-public:
 Matrix(const Matrix& in) = default;	//default copy constructor
 
 flt& at(size_t row_in,size_t column_in) {	//member access
@@ -223,9 +221,10 @@ for (size_t i{0};i<n;++i) {ret*=(*this);}
 return ret;
 }
 
+
 Matrix inverse(void) const {
 flt det = this->det();
-auto ret = this->adjoint() * (flt(1.0)/det);
+auto ret = this->cofactors().transpose() * (flt(1.0)/det);
 return ret;
 }
 
@@ -274,14 +273,14 @@ std::cout <<"///////////////////////////////////////////////////////////////////
 
 
 std::cout <<"Default Matrix"<< rom::Matrix<float>{} << std::endl;
-rom::Matrix<double>  a{{	{5.0,9.0,3.0,7.0,1.0,5.0, 7 , 1 },
-				{6.0,9.0,3.0,7.0,0.0,5.0, 0 , 3 },
-				{1.0,4.0,8.0,1.0,4.0,7.0, 4 , 6 },
-				{6.0,3.0,9.0,6.0,2.0,7.0, 6 , 8 },
-				{9.0,2.0,5.0,0.0,4.0,7.0, 0 , 9 },
-				{1.0,4.0,8.0,2.0,5.0,9.0, 2 , 3 },
-				{5.0,9.0,2.0,6.0,9.0,2.0, 5 , 4 },
-				{9.0,2.0,6.0,2.0,5.0,9.0, 7 , 6 }	}};
+rom::Matrix<double> a{{		{5.0,9.0,3.0,7.0,1.0,5.0,7.0,1.0},
+				{6.0,9.0,3.0,7.0,0.3,5.0,0.3,3.0},
+				{1.0,4.0,8.0,1.0,4.0,7.0,4.0,6.0},
+				{6.0,3.0,9.0,6.0,2.0,7.0,6.0,8.0},
+				{9.0,2.0,5.0,0.1,4.0,7.0,0.1,9.0},
+				{1.0,4.0,8.0,2.0,5.0,9.0,2.0,3.0},
+				{5.0,9.0,2.0,6.0,9.0,2.0,5.0,4.0},
+				{9.0,2.0,6.0,2.0,5.0,9.0,7.0,6.0}	}};
 std::cout <<"Matrix"<< a << std::endl;//the right answear is: 213546
 std::cout <<"Determinant "<< a.det() <<std::endl;
 std::cout <<"Determinant of the transpose is "<< a.transpose().det()<<  std::endl;

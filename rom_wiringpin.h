@@ -795,32 +795,6 @@ r /= 1000.0;                    	// [gauss/LSB]
 return magnetictmp=r;
 }
 
-//Following Functions return the measured values from the device in its own frame of reference
-//Z points in the direction at witch you stay when you watch the led's
-//X and Y is in the Plane of the 64 LED's
-// rotation around X axis [RAD/SEK]
-double out_x_g(void)    {return _RAD_P_GRAD * angular_rate() * master.read_s16_reg(OUT_X_L_G, sad_write_acc[0]);}
-// rotation around Y axis [RAD/SEK]
-double out_y_g(void)    {return _RAD_P_GRAD * angular_rate() * master.read_s16_reg(OUT_Y_L_G, sad_write_acc[0]);}
- // rotation around Z axis [RAD/SEK]
-double out_z_g(void)    {return _RAD_P_GRAD * angular_rate() * master.read_s16_reg(OUT_Z_L_G, sad_write_acc[0]);}
-// acceleration x axis [m/(SEK*sek)]
-double out_x_xl(void)   {return _EARTH_G * linear_rate() * master.read_s16_reg(OUT_X_L_XL, sad_write_acc[0]);}
-// acceleration y axis [m/(SEK*sek)]
-double out_y_xl(void)   {return _EARTH_G * linear_rate() * master.read_s16_reg(OUT_Y_L_XL, sad_write_acc[0]);}
- // acceleration z axis [m/(SEK*sek)]
-double out_z_xl(void)   {return _EARTH_G * linear_rate() * master.read_s16_reg(OUT_Z_L_XL, sad_write_acc[0]);}
-// magnetic flux x axis [tesla]  //using negative y axis as x axis
-double out_x_m(void)    {return _TESLA_P_GAUSS * magnetic_rate() * -1.0 * master.read_s16_reg(OUT_Y_L_M, sad_write_mag[0]);}
-// magnetic flux y axis [tesla] //using negative x axis as y axis
-double out_y_m(void)    {return _TESLA_P_GAUSS * magnetic_rate() * -1.0 * master.read_s16_reg(OUT_X_L_M, sad_write_mag[0]);}
- // magnetic flux z axis [tesla]
-double out_z_m(void)    {return _TESLA_P_GAUSS * magnetic_rate() * master.read_s16_reg(OUT_Z_L_M, sad_write_mag[0]);}
-
-rom::Vector<double,3> acceleration_raw(void)   {return rom::Vector<>({-1.0*out_x_xl(),out_y_xl(),out_z_xl()});	}//raw data gyroskope
-rom::Vector<double,3> rotation_axis_raw(void)  {return rom::Vector<>({-1.0*out_x_g(),out_y_g(),out_z_g()});	}//raw data accelerometer
-rom::Vector<double,3> magnetism_raw(void)      {return rom::Vector<>({-1.0*out_x_m(),out_y_m(),out_z_m()});	}//raw data magnetometer
-
 void initialise_all_registers(void) {
 //accelerometer
 uint8_t ACT_THS_value		{0x80};  // set gyroscope in sleep mode
@@ -892,11 +866,41 @@ earth_gravity   =       tmpac /= i;
 zero_magnetism  =       tmpmg /= i;
 }
 
-
 public:
 lsm9ds1(i2c_master& mi):master(mi),zero_rotation{},earth_gravity{},zero_magnetism{}	{
 initialise_all_registers();
 calibrate();
+}
+
+//Following Functions return the measured values from the device in its own frame of reference
+//Z points in the direction at witch you stay when you watch the led's
+//X and Y is in the Plane of the 64 LED's
+// rotation around X axis [RAD/SEK]
+double out_x_g(void)    {return _RAD_P_GRAD * angular_rate() * master.read_s16_reg(OUT_X_L_G, sad_write_acc[0]);}
+// rotation around Y axis [RAD/SEK]
+double out_y_g(void)    {return _RAD_P_GRAD * angular_rate() * master.read_s16_reg(OUT_Y_L_G, sad_write_acc[0]);}
+ // rotation around Z axis [RAD/SEK]
+double out_z_g(void)    {return _RAD_P_GRAD * angular_rate() * master.read_s16_reg(OUT_Z_L_G, sad_write_acc[0]);}
+// acceleration x axis [m/(SEK*sek)]
+double out_x_xl(void)   {return _EARTH_G * linear_rate() * master.read_s16_reg(OUT_X_L_XL, sad_write_acc[0]);}
+// acceleration y axis [m/(SEK*sek)]
+double out_y_xl(void)   {return _EARTH_G * linear_rate() * master.read_s16_reg(OUT_Y_L_XL, sad_write_acc[0]);}
+ // acceleration z axis [m/(SEK*sek)]
+double out_z_xl(void)   {return _EARTH_G * linear_rate() * master.read_s16_reg(OUT_Z_L_XL, sad_write_acc[0]);}
+// magnetic flux x axis [tesla]  //using negative y axis as x axis
+double out_x_m(void)    {return _TESLA_P_GAUSS * magnetic_rate() * -1.0 * master.read_s16_reg(OUT_Y_L_M, sad_write_mag[0]);}
+// magnetic flux y axis [tesla] //using negative x axis as y axis
+double out_y_m(void)    {return _TESLA_P_GAUSS * magnetic_rate() * -1.0 * master.read_s16_reg(OUT_X_L_M, sad_write_mag[0]);}
+ // magnetic flux z axis [tesla]
+double out_z_m(void)    {return _TESLA_P_GAUSS * magnetic_rate() * master.read_s16_reg(OUT_Z_L_M, sad_write_mag[0]);}
+
+rom::Vector<double,3> acceleration_raw(void)   {return rom::Vector<>({-1.0*out_x_xl(),out_y_xl(),out_z_xl()});	}//raw data gyroskope
+rom::Vector<double,3> rotation_axis_raw(void)  {return rom::Vector<>({-1.0*out_x_g(),out_y_g(),out_z_g()});	}//raw data accelerometer
+rom::Vector<double,3> magnetism_raw(void)      {return rom::Vector<>({-1.0*out_x_m(),out_y_m(),out_z_m()});	}//raw data magnetometer
+
+double temp(void) {  //Temperatur in [Celsius] vom Gyroskop  //this sensor is off more than 3 degrees in my case :-(
+double t = (double)(master.read_s16_reg(OUT_TEMP_L,sad_write_acc[0]));
+return (t/16.0)+25.0;
 }
 
 };//lsm9ds1
@@ -917,7 +921,7 @@ rom::i2c_master custom_m(24,25,400000);	//create an i2c_master for comuntication
 				//on custom i2c bus
 
 rom::hts221 humi{sense_m};	//
-std::cout << "Temperature of humidity ensor is: \t" << humi.temp() <<std::endl;
+std::cout << "Temperature of humidity sensor is: \t" << humi.temp() <<std::endl;
 std::cout << "Humidity is:                      \t" << humi.humidity() <<std::endl;
 
 rom::lps25h press{sense_m};
@@ -933,7 +937,9 @@ for (uint8_t i{0};i<3;++i){
 da.write_all(1.8);
 
 
-rom::lsm9ds1{sense_m};
+rom::lsm9ds1 gyro{sense_m};
+std::cout << "Temperature of gyroscope sensor is:\t" << gyro.temp() <<std::endl;
+
 }
 
 #endif

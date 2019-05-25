@@ -23,13 +23,14 @@
 //run it by typing command ./example
 
 #include "rom_fft.h"
-//#include "rom_wiringpin.h"
+#include "rom_wiringpin.h"
 #include "rom_matrix.h"
 
 int main (void) {
+rom::prime_t();
 //rom_fft_t();
 //rom_wiringpin_t();
-rom_matrix_t();
+//rom_matrix_t();
 //rom_spacetime_t();
 
 

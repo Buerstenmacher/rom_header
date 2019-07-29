@@ -3,6 +3,8 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <thread>
+#include <iomanip>
 #include "rom_error.h"
 #include "rom_time.h"
 
@@ -94,7 +96,14 @@ template <class uintxx_t = uint64_t>
 void one_thread(uintxx_t start, uintxx_t ntimes,double& kw,uintxx_t& n) {
 kw = 0.0;
 n =0;
-for (uintxx_t i=start; i!=(start+ntimes);++i) {
+uintxx_t i{start};
+for (;(i<=(start+ntimes))&&(i%6)!=5;++i) {
+        if (isprime<uintxx_t>(i)){
+                ++n;
+                kw += (1.0/i);
+                }
+        }
+for (;(i<=(start+ntimes));i+=((i%6)==5)?2:4) {//optimization for speed 
         if (isprime<uintxx_t>(i)){
                 ++n;
                 kw += (1.0/i);
@@ -102,8 +111,9 @@ for (uintxx_t i=start; i!=(start+ntimes);++i) {
         }
 }
 
+//can be used to benchmark your cpu
 template <class uintxx_t = uint64_t>
-double prime_benchmark(uintxx_t nthread=1,uint8_t  output=1) { //can be used to benchmark your cpu
+double prime_benchmark(uintxx_t nthread=1,uint8_t  output=1,double finish =rom::_PI<double>()) {
 constexpr uintxx_t nthprime{54617891};  //at this primenumber the threshold of pi should be exceedet
 constexpr uintxx_t nthpos{3260806};     //at this primenumber the threshold of pi should be exceedet
 constexpr double rp2_time(846);         //This much seconds it takes on a Raspberry pi 2 at 900MHZ Cpu -Freq
@@ -128,30 +138,31 @@ do      {
                 std::cout <<  n << " prime numbers until " << nthread*i_per_thread*round <<". The sum of all Prime Numbers to the power of -1 until here is: ";
                 std::cout << kw <<std::endl;
                 }
-        } while (kw<rom::_PI<double>());    //until overrun
+        } while (kw<finish);    //until overrun
 round--;                                                                //calculate back bevore overrun
 kw =    std::accumulate(kw_tmp.begin(),kw_tmp.end(),kw,std::minus<double>());           //calculate back
 n  =    std::accumulate(n_tmp.begin(), n_tmp.end(),n, std::minus<uintxx_t>());          //calculate back
 if (output) {
         std::cout <<  n << " prime numbers until " << nthread*i_per_thread*round<<". The sum of all Prime Numbers to the power of -1 until here is: ";
-        std::cout << kw <<std::endl;
+        std::cout <<std::setprecision(12)<< kw <<std::endl;
         }
 for (uintxx_t i=round*i_per_thread*nthread;i<std::numeric_limits<uintxx_t>::max();i++) {
         if (isprime(i)) {
                 n++;
                 kw += (1.0/i);
-                if (kw>= rom::_PI<double>()) {
+                if (kw>= finish) {
                         if (output) {
                                 std::cout << i << " is the " << n << " nd prime number. "<<std::endl;
 				std::cout <<"The sum of all Prime Numbers to the power of -1 until here is: ";
-                                std::cout << kw << ", " << " this is: " << kw - rom::_PI<double>()<<" larger than "<< rom::_PI<double>()<< std::endl;
+                                std::cout << kw << ", " << " this is: " << kw - finish<<" larger than ";
+				std::cout << std::setprecision(12)<< finish<< std::endl;
                                 }
                         break;
                         }
                 }
         }
 double end = rom::mashinetime();
-if (n-nthpos) {rom::error("Failed to calculate correct");}
+if ((n-nthpos)&&(finish==rom::_PI<double>())) {rom::error("Failed to calculate correct");}
 if (output) {
         std::cout<<"It took "<< end-start << " seconds to prove that the sum of all primes to the power of -1 is greater then PI" << std::endl;
         std::cout<< "This was "<< rp2_time/(end-start) << " times faster than on a Raspberry Pi 2 running on 900MHZ (single thread)" <<std::endl;
@@ -160,7 +171,7 @@ return (end-start);
 }
 
 
-void prime_t(void) {::rom::prime_benchmark<uint32_t>(32,1);}
+void prime_t(void) {::rom::prime_benchmark<uint64_t>(16,1,3.5);}
 
 }	//namespace rom
 //*********************************************************************************************

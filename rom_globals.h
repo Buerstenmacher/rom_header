@@ -101,7 +101,7 @@ template<class flt>
 constexpr flt _pit()	{return acos(_neg_one<flt>());}	//can be positive pi or negative pi
 
 template<class flt>
-constexpr flt _PI(void)	{//copute pi at compiletime (3.1415..............)
+constexpr flt _PI(void)	{//compute pi at compiletime (3.1415..............)
 return (_pit<flt>() >= _zero<flt>())? _pit<flt>() : (_neg_one<flt>()*_pit<flt>());
 }	//returns positive pi at compiletime
 
@@ -137,12 +137,22 @@ constexpr fltp _max_acceptable_error(){	//i would accept a large multiple of eps
 return (std::numeric_limits<fltp>::epsilon()*256*1024);
 }//after a long chain of calculations, you should be able to calculate back without exceeding this error
 
+template<typename flt>			//every floating point type
+constexpr flt _zero_max(void) {    //the largest value we will accept as zero
+return std::abs(1024*std::numeric_limits<flt>::min());
+}
+
 template <class flt>
 uint8_t _almost_equal(flt a,flt b)  {
 flt largest = (std::abs(a)>std::abs(b))?(a):(b);     //variables for equality; but if you need it here is the
 flt abs_dif = std::abs(a-b);
 flt max_error = std::abs(largest) * _max_acceptable_error<flt>();
 return (max_error > abs_dif)?1:0;
+}
+
+template <class flt>
+uint8_t _not_zero(flt a)  {	//check if a floating point variable is not zero
+return (std::abs(a) >= _zero_max<flt>())?1:0;
 }
 
 inline uint8_t getbit(uint8_t bytein, uint8_t nthbit) {//get the value of the nth bit of one uint8_t

@@ -23,20 +23,20 @@
 //run it by typing command ./example
 
 //#include "rom_prime.h"
-#include "rom_fft.h"
-#include "rom_ncurses.h"
-//#include "rom_wiringpin.h"
+//#include "rom_fft.h"
+//#include "rom_ncurses.h"
+#include "rom_wiringpin.h"
 //#include "rom_matrix.h"
-#include "rom_wiringnano.h"
+//#include "rom_wiringnano.h"
 
 int main(int argc, char *argv[]) {
 //rom::prime_t();
 //rom::ncurses_t(argc,argv);
 //rom_fft_t();
 //rom_wiringpin_t();
-//rom_matrix_t();
+rom_matrix_t();
 //rom_spacetime_t();
-rom::wiringnano_t();
+//rom::wiringnano_t();
 return 0;
 }
 

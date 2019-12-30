@@ -67,26 +67,22 @@ ret = ret.delete_row(c);
 return ret.transpose();
 }
 
-constexpr flt zero_max(void) const {	//the largest value we will accept as zero
-return std::abs(1024.0*std::numeric_limits<flt>::min());
-}
-
 uint8_t row_is_zero(size_t r) const {			//check if an entire row consists of zero values
 auto row{row(r)};
-for (auto& value:row) {if (std::abs(value) >= zero_max()) {return 0;}}
+for (auto& value:row) {if (_not_zero(value)) {return 0;}}
 return 1;
 }
 
 uint8_t col_is_zero(size_t r) const {			//check if an entire column consists of zero values
 auto colu{col(r)};
-for (auto& value:colu) {if (std::abs(value) >= zero_max()) {return 0;}}
+for (auto& value:colu) {if (_not_zero(value)) {return 0;}}
 return 1;
 }
 
-uint8_t col_is_zero_except_first_row(size_t r) const {	//check if an entire column consists of zero values ingnore first element
-auto colu{col(r)};
+uint8_t first_col_is_zero_except_first_row() const {	//check if an entire column consists of zero values ingnore first element
+auto colu{col(0)};
 auto it{colu.begin()};
-for (it++/*ignore colu.at(0)*/;it!=colu.end();it++) {if (std::abs(*it) >= zero_max()) {return 0;}}
+for (it++/*ignore colu.at(0)*/;it!=colu.end();it++) {if (_not_zero(*it)) {return 0;}}
 return 1;
 }
 
@@ -114,7 +110,7 @@ return std::distance(first_column.begin(),iter);
 
 size_t row_with_first_nonzero_value_in_first_column_after_first_element(void) const {	//first column is col(0)
 auto first_column{col(0)};
-for (size_t r{1};r!=rows();r++)	{if (std::abs(first_column.at(r))>=zero_max()) {return r;}}
+for (size_t r{1};r!=rows();r++)	{if (_not_zero(first_column.at(r))) {return r;}}
 return 0;
 }
 
@@ -180,7 +176,7 @@ if (col_is_zero(0))	{//if the entire first column is zero the determinant of the
 //	std::cout << flt{0.0} <<std::endl;
 	return flt{0.0};
 	}
-if (col_is_zero_except_first_row(0)) {//if there is only one value left in column
+if (first_col_is_zero_except_first_row()) {//if there is only one value left in column
 	auto copy = delete_row_and_column(0,0);
 //	std::cout << at(0,0)<<" * "   <<std::endl;
 	return (at(0,0) * copy.determinant());
@@ -383,42 +379,8 @@ rom::Matrix<double> a{{		{5.0,9.0,3.0,7.0,1.0,5.0,7.0,1.0,3.0},
 				{9.0,2.0,6.0,2.0,5.0,9.0,7.0,6.0,0.3}	}};//Determinant: 3944525.700
 std::cout <<"Matrix"<< a << std::endl;
 std::cout << std::fixed << std::setprecision(3);
-std::cout <<"Determinant "<< a.determinant() <<std::endl << std::endl;
-
-/*std::cout <<"Determinant of the transpose is "<< a.transpose().determinant()<<  std::endl;
-rom::Matrix<float>  b{{	{4.0,3.0},
-			{7.0,5.0}	}};
-std::cout <<"Matrix"<< b << std::endl << "Determinant: " << b.determinant();
-std::cout << std::endl;
-
-rom::Matrix<float>  l{{	{1,0,3,8},
-			{0,1,7,2}	}};
-rom::Matrix<float>  r{{	{ 3, 8,36},
-			{ 7, 2,34},
-			{-1, 0,-4},
-			{ 0,-1,-3}	}};
-auto result = l*r;
-std::cout <<"Matrix"<< l <<" * "<< std::endl;
-std::cout <<"Matrix"<< r <<" = "<< std::endl;
-std::cout <<"Matrix"<< result <<"  "<< std::endl;
-rom::Matrix<float>  e{{	{ 1, 0, 0, 0},
-			{ 1, 1, 0, 0},
-			{ 1, 1, 1, 0},
-			{ 1, 1, 1, 1}	}};
-uint16_t exp = 10;
-std::cout <<"Matrix"<< e <<" ^ ";
-std::cout <<"Integer "<< exp <<" = "<< std::endl;
-std::cout <<"Matrix"<< e.to_the_power_of(exp) <<"  "<< std::endl;
-
-
-rom::Matrix<float>  f{{	{ 3, 0, 2},
-			{ 2, 0, -2},
-			{ 0, 1, 1}	}};
-std::cout <<"Matrix"<< f << std::endl;
-std::cout <<"Inverse = " <<f.inverse()<< std::endl;
-std::cout <<"Multiplication returns  = " <<(f.inverse()*f)<< std::endl;
-*/
-
+std::cout <<"Determinant "<< a.determinant() <<std::endl << std::endl;	//calculating the determinant of a 9x9 matrix
+									//can be a long comutation if you use a bad algorithm
 auto start{rom::mashinetime()};
 auto a_inv = a.inverse();
 auto a_inv_a = a_inv*a;

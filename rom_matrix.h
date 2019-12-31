@@ -18,7 +18,7 @@
 namespace rom {
 
 //Helper functions:
-int8_t parity_of_permutation(size_t inp) {return (inp%2)?-1:1;}
+int8_t parity_of_permutation(size_t inp) 	{return (inp%2)?-1:1;}
 int8_t parity_of_permutation(size_t a,size_t b) {return ((a+b)%2)?-1:1;}
 
 //test if an 2d vector is square
@@ -35,10 +35,10 @@ for (auto& elem:in) {if (elem.size()!=in.back().size()) {return 0;/*false*/}}
 return 1;//true
 }
 
-//switch 2 values of variables with the same type
+//swap 2 values of variables with the same type
 template<class assignable>	//every type that has operator = defined
-void switch_values(assignable& a, assignable& b) {  //parameter will be NOT - const!!!
-static assignable tmp{};
+void swap_values(assignable& a, assignable& b) {  //parameter will be NOT - const!!!
+static assignable tmp{};	//using static temp variable might be the fastest solution
 tmp=a;
 a=b;
 b=tmp;
@@ -53,68 +53,69 @@ class Matrix{
 private:
 std::vector<flt> m_d;  //the two dimensions should be flatened to an one dimensional std::vector
 size_t m_rows;
-size_t m_columns;
+size_t m_columns;	//one of the two variable is redundant because m_d.sze() should always equal (m_rows * m_columns)
 
 Matrix delete_row(size_t r) const {	//create a new Matrix without row number r
-std::vector<std::vector<flt>> ret {};
-for (size_t row{0}; row!=rows();row++) {if (row!=r) {ret.push_back(this->row(row));}}
-return Matrix(ret);
+std::vector<std::vector<flt>> ret {};	//create empty 2d vector
+ret.reserve(rows());			//reserve memory for speed only
+for (size_t row{0}; row!=rows();row++) {if (row!=r) {ret.push_back(this->row(row));}}	//copy every row except row r
+return Matrix(ret);			//create a new Matrix object from 2d vector and return it
 }
 
 Matrix delete_column(size_t c) const {	//create a new Matrix without column number c
-auto ret{this->transpose()};		//todo: this function is verry slow do to multiple times copying the entire Matrix
-ret = ret.delete_row(c);
-return ret.transpose();
+auto ret{this->transpose()};		//create a new matrix witch is the transose of input
+ret = ret.delete_row(c);		//remove one row of it
+return ret.transpose();			//create another transpose matrix of it and return it
 }
 
 uint8_t row_is_zero(size_t r) const {			//check if an entire row consists of zero values
-auto row{row(r)};
-for (auto& value:row) {if (_not_zero(value)) {return 0;}}
-return 1;
+auto row{row(r)};					//get the row
+for (auto& value:row) {if (_not_zero(value)) {return 0;}}	//check it
+return 1;						//return true if every value is zero
 }
 
 uint8_t col_is_zero(size_t r) const {			//check if an entire column consists of zero values
-auto colu{col(r)};
-for (auto& value:colu) {if (_not_zero(value)) {return 0;}}
+auto colu{col(r)};					//get the column
+for (auto& value:colu) {if (_not_zero(value)) {return 0;}}	//check it
 return 1;
 }
 
-uint8_t first_col_is_zero_except_first_row() const {	//check if an entire column consists of zero values ingnore first element
+uint8_t first_col_is_zero_except_first_row() const {	//check if an entire column consists of zero values while ingnoring the first element
 auto colu{col(0)};
 auto it{colu.begin()};
 for (it++/*ignore colu.at(0)*/;it!=colu.end();it++) {if (_not_zero(*it)) {return 0;}}
 return 1;
 }
 
-Matrix switch_rows(size_t a, size_t b) const {		//return a matrix with rows a and b switched
+Matrix swap_rows(size_t a, size_t b) const {		//return a matrix with rows a and b swaped; gaussian elimination operation
 auto ret{Matrix(*this)};				//copy current object;
 if (a==b) {return ret;}
-if ((a>= rows()) || (b>=rows()))	{::rom::error("trying to switch rows out of matrix");}
-for (size_t c{0};c!=columns();++c) 	{switch_values(ret.at(a,c),ret.at(b,c));}
+if ((a>= rows()) || (b>=rows()))	{::rom::error("trying to swap rows out of matrix");}
+for (size_t c{0};c!=columns();++c) 	{swap_values(ret.at(a,c),ret.at(b,c));}
 return ret;
 }
 
-Matrix multply_row_by_number(size_t row, flt number) const {	//create a matrix with one number multiplied by number
+Matrix multply_row_by_number(size_t row, flt number) const {	//create a new matrix with one row multiplied by number; gaussian aliminatin operation
 auto ret{Matrix(*this)};	//copy current object;
 if (row>= rows())			{::rom::error("trying to multiply row out of matrix");}
 for (size_t c{0};c!=columns();++c) 	{ret.at(row,c)=ret.at(row,c)*number;}
 return ret;
 }
 
-ptrdiff_t row_with_largest_value_in_first_column(void) const {	//first column is col(0)
+ptrdiff_t row_with_largest_value_in_first_column(void) const {	//get the number of the row with the largest value in column 0
 auto first_column{col(0)};
 for (auto& r:first_column)	{r = std::abs(r);}
 auto iter{std::max_element(first_column.begin(),first_column.end())};
 return std::distance(first_column.begin(),iter);
 }
 
-size_t row_with_first_nonzero_value_in_first_column_after_first_element(void) const {	//first column is col(0)
+size_t row_with_first_nonzero_value_in_first_column_after_first_element(void) const {	//read the name to know the purpose
 auto first_column{col(0)};
 for (size_t r{1};r!=rows();r++)	{if (_not_zero(first_column.at(r))) {return r;}}
 return 0;
 }
 
-Matrix add_multiple_of_row_a_to_row_b(flt mul,size_t a, size_t b) const{
+Matrix add_multiple_of_row_a_to_row_b(flt mul,size_t a, size_t b) const{	//one of 3 operations of gaussian elimination
 auto ret{Matrix(*this)};	//copy current object;
 if (a==b) 				{::rom::error("adding a multiple of one row to itself is not a valid operation");}
 if ((a>= rows()) || (b>=rows()))	{::rom::error("trying to add up rows out of matrix");}
@@ -130,7 +131,7 @@ return ret;
 }
 
 public:
-Matrix(const Matrix& in) = default;	//default copy constructor
+Matrix(const Matrix& in) = default;	//default copy constructor should be fine
 Matrix(void) = delete;  		//no default constructor
 
 flt& at(size_t row_in,size_t column_in) {	//member access
@@ -183,23 +184,23 @@ if (first_col_is_zero_except_first_row()) {//if there is only one value left in 
 	}
 if (row_with_largest_value_in_first_column()!=0)  {//put the largest value in first row
 	auto lrow{row_with_largest_value_in_first_column()};
-	auto copy = switch_rows(0,lrow);
+	auto copy = swap_rows(0,lrow);
 //	std::cout << "-1.0 * "  <<std::endl;
-	return ((-1.0) * copy.determinant());
+	return ((-1.0) * copy.determinant());	//swapping two rows inverses the sign of determinant
 	}
 if (row_with_first_nonzero_value_in_first_column_after_first_element()!=0)  {
 	auto ro{row_with_first_nonzero_value_in_first_column_after_first_element()};
-	auto copy = eliminate_element_in_first_column_of_row_a_by_first_row(ro);
-//	std::cout <<" = "<<std::endl;
-	return copy.determinant();
+	auto copy = eliminate_element_in_first_column_of_row_a_by_first_row(ro);	//one step of gaussian elimination
+//	std::cout <<" = "<<std::endl;							//that does not change the value of determinant
+	return copy.determinant();							//but makes it easier to calculate
 	}
-error("failed to calculate determinant of matrix");
+error("failed to calculate determinant of matrix");	//lets hope we never get here ;-)
 return NAN;
 }
 
 Matrix minors(void) const {	//create a matrix of minors from the current object
 if ( !is_sqare() )  {error("Sorry cannot create a non sqare Matrix of Minors ");}
-auto ret{*this}; 			//copy current object to get a matrix with the right size
+auto ret{*this}; 		//copy current object to get a matrix with the right size
 for (size_t r{0};r<ret.rows();++r) {  			//every row
 	for (size_t c{0};ret.columns()!=c;c++) { 	//every column
 		ret.at(r,c) = (*this).delete_row_and_column(r,c).determinant(); //store the coresponding determinant value
@@ -210,9 +211,9 @@ return std::move(ret);
 
 Matrix cofactors(void) const {
 auto ret{this->minors()};
-for (size_t r{0};r<ret.rows();++r) {  	//recreate a 2d vector of rows
-	for (size_t c{0};ret.columns()!=c;c++) { 	//every column
-		ret.at(r,c) *= parity_of_permutation(r,c);	//switch the sign if permutation is (even? odd?)
+for (size_t r{0};r<ret.rows();++r) {  				//recreate a 2d vector of rows
+	for (size_t c{0};ret.columns()!=c;c++) { 		//every column
+		ret.at(r,c) *= parity_of_permutation(r,c);	//swap the sign if permutation is (even? odd?)
 		}
 	}
 return std::move(ret);
